@@ -1,0 +1,761 @@
+<title>Agenda di Ceci</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --bg: #fdf7f4;
+  --card: #ffffff;
+  --text: #3a2e2c;
+  --muted: #8b7d79;
+  --line: #f0e4df;
+  --accent: #e9787a;
+  --accent-soft: #fde4e2;
+  --danger: #c0392b;
+  --on-accent: #ffffff;
+  --radius: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1d1918; --card: #2a2423; --text: #f3ebe8; --muted: #b3a5a1;
+    --line: #3b3331; --accent: #f08f90; --accent-soft: #4a2f30; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1d1918; --card: #2a2423; --text: #f3ebe8; --muted: #b3a5a1;
+    --line: #3b3331; --accent: #f08f90; --accent-soft: #4a2f30; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+.hidden { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input, select, textarea {
+  font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%;
+}
+textarea { resize: vertical; min-height: 80px; }
+
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--accent); color: var(--on-accent);
+}
+.topbar h1 { font-size: 1.2rem; margin: 0; }
+.icon-btn { background: none; border: 0; font-size: 1.4rem; padding: 4px 10px; border-radius: 10px; }
+
+main, #login { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+.datenav { display: flex; align-items: center; gap: 4px; margin: 14px 0 6px; }
+.datenav .icon-btn { font-size: 2rem; color: var(--accent); line-height: 1; }
+.date-label { flex: 1; position: relative; text-align: center; font-weight: 600; font-size: 1.05rem; }
+.date-label input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.chip {
+  display: inline-block; padding: 4px 10px; border-radius: 999px;
+  background: var(--accent-soft); font-size: .85rem; border: 0; margin: 2px;
+}
+#today { display: block; margin: 0 auto 8px; }
+.summary { text-align: center; margin-bottom: 10px; }
+
+.card {
+  background: var(--card); border-radius: var(--radius); padding: 14px 16px;
+  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.card h2 { font-size: 1.05rem; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+
+.entries { list-style: none; margin: 0; padding: 0; }
+.entry {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: baseline;
+  text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 9px 2px;
+}
+.entries li:last-child .entry { border-bottom: 0; }
+.entry .time { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.2em; }
+.entry .desc { overflow-wrap: anywhere; }
+.entry .by { font-size: .75rem; color: var(--muted); }
+.empty { color: var(--muted); margin: 4px 0 8px; font-size: .9rem; }
+.add {
+  width: 100%; margin-top: 6px; padding: 9px; border-radius: 10px;
+  border: 1.5px dashed var(--accent); background: none; color: var(--accent); font-weight: 600;
+}
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice { border: 1px solid var(--line); background: var(--bg); padding: 7px 12px; border-radius: 999px; }
+.choice.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+.status { text-align: center; color: var(--muted); font-size: .85rem; min-height: 1em; }
+.error { color: var(--danger); }
+
+dialog {
+  border: 0; border-radius: var(--radius); padding: 18px; width: min(92vw, 440px);
+  background: var(--card); color: var(--text);
+}
+dialog::backdrop { background: rgba(0,0,0,.35); }
+dialog h3 { margin: 0 0 12px; }
+label { display: block; margin-bottom: 10px; font-size: .9rem; color: var(--muted); }
+label > input, label > select { margin-top: 4px; }
+.row { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+.spacer { flex: 1; }
+.stack { display: grid; gap: 8px; }
+.row button, .stack button, .login button {
+  padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+button.danger { color: var(--danger); }
+button.link { background: none; border: 0; color: var(--muted); text-decoration: underline; }
+.hint { font-size: .85rem; color: var(--muted); }
+
+.login { margin-top: 40px; text-align: center; display: grid; gap: 4px; }
+.login label { text-align: left; }
+.login .big { font-size: 3rem; margin: 0; }
+
+.tally { display: flex; flex-wrap: wrap; gap: 6px; }
+.mark {
+  width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--bg); font-size: 1.3rem; font-weight: 700; color: var(--text);
+}
+.add-mark { border: 1.5px dashed var(--accent); color: var(--accent); background: none; }
+.count {
+  margin-left: auto; background: var(--accent-soft); border-radius: 999px;
+  padding: 1px 10px; font-size: .9rem;
+}
+.total { text-align: right; font-weight: 700; font-size: 1.1rem; margin: 10px 2px 0; }
+
+/* dentro claude.ai: barra fissa sotto l'area di sistema */
+.topbar { top: env(safe-area-inset-top, 0px); padding-top: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--accent); }
+main, #login { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+</style>
+
+  <header class="topbar">
+    <h1 id="title">Agenda</h1>
+    <button id="btn-settings" class="icon-btn" aria-label="Impostazioni">⚙️</button>
+  </header>
+
+  <!-- Login (solo in modalità condivisa) -->
+  <section id="login" class="hidden">
+    <form id="login-form" class="card login">
+      <p class="big">👋</p>
+      <h2>Accedi all'agenda</h2>
+      <label>Email<input type="email" name="email" autocomplete="username" required></label>
+      <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+      <p id="login-error" class="error"></p>
+      <button class="primary" type="submit">Entra</button>
+      <button type="button" id="btn-reset" class="link">Password dimenticata?</button>
+    </form>
+  </section>
+
+  <main id="main" class="hidden">
+    <nav class="datenav">
+      <button id="prev" class="icon-btn" aria-label="Giorno precedente">‹</button>
+      <label class="date-label">
+        <span id="date-text"></span>
+        <input type="date" id="date-input" aria-label="Scegli il giorno">
+      </label>
+      <button id="next" class="icon-btn" aria-label="Giorno successivo">›</button>
+    </nav>
+    <button id="today" class="chip hidden">Torna a oggi</button>
+    <div id="sections"></div>
+    <p id="status" class="status"></p>
+  </main>
+
+  <dialog id="entry-dialog">
+    <form method="dialog" id="entry-form">
+      <h3 id="entry-title"></h3>
+      <div id="entry-fields"></div>
+      <div class="row">
+        <button type="button" id="entry-delete" class="danger">Elimina</button>
+        <span class="spacer"></span>
+        <button type="button" id="entry-cancel">Annulla</button>
+        <button type="submit" class="primary">Salva</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" id="settings-form">
+      <h3>Impostazioni</h3>
+      <label>Il tuo nome<input name="name" id="set-name" placeholder="es. Andrea"></label>
+      <p class="hint" id="mode-info"></p>
+      <div class="stack">
+        <button type="button" id="btn-export">⬇️ Scarica backup (JSON)</button>
+        <button type="button" id="btn-logout" class="hidden">Esci</button>
+      </div>
+      <div class="row">
+        <span class="spacer"></span>
+        <button type="submit" class="primary">Fatto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module">
+// ── config.js ──
+// ─────────────────────────────────────────────────────────────
+//  CONFIGURAZIONE DELL'AGENDA DI CECILIA
+// ─────────────────────────────────────────────────────────────
+
+const BABY_NAME = 'Cecilia';
+
+// 1) Per condividere i dati con Alice incolla qui la configurazione
+//    del tuo progetto Firebase (vedi README.md, "Condivisione").
+//    Finché resta `null` l'app funziona solo su questo dispositivo.
+const FIREBASE_CONFIG = null;
+/* Esempio:
+const FIREBASE_CONFIG = {
+  apiKey: "AIza...",
+  authDomain: "agenda-ceci.firebaseapp.com",
+  projectId: "agenda-ceci",
+  storageBucket: "agenda-ceci.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef",
+};
+*/
+
+// 2) Le sezioni della pagina giornaliera.
+//    type: 'tally'  → contatore a crocette ✕ (es. pipì)
+//          'list'   → righe ripetibili (es. ogni pasto)
+//          'choice' → una scelta tra opzioni
+//          'text'   → testo libero
+//    Tipi di campo: time, text, number, select
+const minutes = (t) => {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const SECTIONS = [
+  {
+    id: 'pipi',
+    title: 'Pipì',
+    icon: '💧',
+    type: 'tally', // ogni tocco su "＋" aggiunge una ✕ (con l'ora)
+    fields: [{ key: 'ora', label: 'Ora', type: 'time', now: true }],
+  },
+  {
+    id: 'cacca',
+    title: 'Cacca',
+    icon: '💩',
+    type: 'tally',
+    fields: [{ key: 'ora', label: 'Ora', type: 'time', now: true }],
+  },
+  {
+    id: 'pasti',
+    title: 'Pasti',
+    icon: '🍼',
+    type: 'list',
+    fields: [
+      { key: 'ora', label: 'Ora', type: 'time', now: true },
+      { key: 'ml', label: 'Quantità (ml)', type: 'number', step: 10 },
+    ],
+    total: (items) => `TOT: ${items.reduce((s, i) => s + (Number(i.ml) || 0), 0)} ml`,
+  },
+  {
+    id: 'note',
+    title: 'Note',
+    icon: '📝',
+    type: 'text',
+    placeholder: 'Cose da dire all\'altra, da ricordare, da comprare…',
+  },
+];
+
+/* Altre sezioni pronte da aggiungere all'elenco sopra, se servono:
+
+  { id: 'nanna', title: 'Nanna', icon: '😴', type: 'list',
+    fields: [
+      { key: 'inizio', label: 'Dalle', type: 'time', now: true },
+      { key: 'fine', label: 'Alle', type: 'time' },
+    ],
+    total: (items) => {
+      let tot = 0;
+      for (const i of items) {
+        const a = minutes(i.inizio), b = minutes(i.fine);
+        if (a != null && b != null) tot += b >= a ? b - a : b + 1440 - a;
+      }
+      return `TOT: ${Math.floor(tot / 60)}h ${String(tot % 60).padStart(2, '0')}m`;
+    } },
+
+  { id: 'salute', title: 'Salute e medicine', icon: '💊', type: 'list',
+    fields: [
+      { key: 'ora', label: 'Ora', type: 'time', now: true },
+      { key: 'cosa', label: 'Cosa', type: 'text', placeholder: 'es. Tachipirina, febbre 37.8°' },
+    ] },
+
+  { id: 'umore', title: 'Umore', icon: '🌈', type: 'choice',
+    options: ['😄 Felice', '🙂 Tranquilla', '😢 Nervosa', '🤒 Malaticcia'] },
+*/
+
+// ── store.js ──
+// Archivio dati: locale (solo questo dispositivo) oppure Firebase (condiviso).
+// Forma di un giorno: { fields: {sezione: valore}, entries: [{id, section, ...}] }
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+// ───────────────────────── Locale ─────────────────────────
+function createLocalStore() {
+  const KEY = 'ceci-agenda-v1';
+  const subs = new Map(); // date -> Set(cb)
+  const load = () => {
+    try { return JSON.parse(localStorage.getItem(KEY)) || { days: {} }; }
+    catch { return { days: {} }; }
+  };
+  let data = load();
+  const day = (d) => (data.days[d] ||= { fields: {}, entries: {} });
+  const snapshot = (d) => {
+    const x = data.days[d] || { fields: {}, entries: {} };
+    return { fields: { ...x.fields }, entries: Object.entries(x.entries).map(([id, e]) => ({ id, ...e })) };
+  };
+  const emit = (d) => subs.get(d)?.forEach((cb) => cb(snapshot(d)));
+  const save = (d) => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} emit(d); };
+  window.addEventListener('storage', (e) => {
+    if (e.key !== KEY) return;
+    data = load();
+    subs.forEach((_, d) => emit(d));
+  });
+
+  return {
+    shared: false,
+    async init(onUser) { onUser({ email: null }); },
+    async signIn() {},
+    async signOut() {},
+    subscribeDay(d, cb) {
+      if (!subs.has(d)) subs.set(d, new Set());
+      subs.get(d).add(cb);
+      cb(snapshot(d));
+      return () => subs.get(d).delete(cb);
+    },
+    async addEntry(d, entry, by) { day(d).entries[uid()] = { ...entry, by, createdAt: Date.now() }; save(d); },
+    async updateEntry(d, id, entry, by) { Object.assign(day(d).entries[id], entry, { by }); save(d); },
+    async deleteEntry(d, id) { delete day(d).entries[id]; save(d); },
+    async setField(d, key, value) { day(d).fields[key] = value; save(d); },
+    async exportAll() { return data; },
+  };
+}
+
+// ───────────────────────── Firebase ─────────────────────────
+const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
+
+async function createFirebaseStore(config) {
+  const { initializeApp } = await import(FB + 'firebase-app.js');
+  const auth$ = await import(FB + 'firebase-auth.js');
+  const fs = await import(FB + 'firebase-firestore.js');
+
+  const app = initializeApp(config);
+  const auth = auth$.getAuth(app);
+  await auth$.setPersistence(auth, auth$.browserLocalPersistence);
+  let db;
+  try {
+    db = fs.initializeFirestore(app, {
+      localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }),
+    });
+  } catch {
+    db = fs.getFirestore(app);
+  }
+
+  const dayDoc = (d) => fs.doc(db, 'days', d);
+  const entriesCol = (d) => fs.collection(db, 'days', d, 'entries');
+
+  return {
+    shared: true,
+    init(onUser) {
+      auth$.onAuthStateChanged(auth, (u) => onUser(u ? { email: u.email } : null));
+    },
+    async signIn(email, password) {
+      await auth$.signInWithEmailAndPassword(auth, email, password);
+    },
+    async resetPassword(email) {
+      await auth$.sendPasswordResetEmail(auth, email);
+    },
+    async signOut() { await auth$.signOut(auth); },
+    subscribeDay(d, cb, onError) {
+      let fields = {}, entries = [];
+      const push = () => cb({ fields, entries });
+      const u1 = fs.onSnapshot(dayDoc(d), (s) => { fields = s.data()?.fields || {}; push(); }, onError);
+      const u2 = fs.onSnapshot(entriesCol(d), (s) => {
+        entries = s.docs.map((x) => ({ id: x.id, ...x.data() }));
+        push();
+      }, onError);
+      return () => { u1(); u2(); };
+    },
+    async addEntry(d, entry, by) {
+      await fs.setDoc(dayDoc(d), { updatedAt: fs.serverTimestamp() }, { merge: true });
+      await fs.addDoc(entriesCol(d), { ...entry, by, createdAt: Date.now() });
+    },
+    async updateEntry(d, id, entry, by) {
+      await fs.updateDoc(fs.doc(db, 'days', d, 'entries', id), { ...entry, by });
+    },
+    async deleteEntry(d, id) {
+      await fs.deleteDoc(fs.doc(db, 'days', d, 'entries', id));
+    },
+    async setField(d, key, value) {
+      await fs.setDoc(dayDoc(d), { fields: { [key]: value }, updatedAt: fs.serverTimestamp() }, { merge: true });
+    },
+    async exportAll() {
+      const out = { days: {} };
+      const days = await fs.getDocs(fs.collection(db, 'days'));
+      for (const dd of days.docs) {
+        const ents = await fs.getDocs(entriesCol(dd.id));
+        out.days[dd.id] = {
+          fields: dd.data().fields || {},
+          entries: Object.fromEntries(ents.docs.map((e) => [e.id, e.data()])),
+        };
+      }
+      return out;
+    },
+  };
+}
+
+// ───────────────────── Artifact su claude.ai (condiviso) ─────────────────────
+// Usato quando l'app è aperta come Artifact dentro Claude: i dati stanno
+// nell'archivio condiviso dell'artifact, visibile a chi ha il link.
+async function createClaudeStore() {
+  const db = await window.claude.use('db');
+  if (!db) return null;
+  const user = await window.claude.use('user');
+  const downloads = await window.claude.use('downloads');
+  const myId = (await user?.id()) || '';
+  const entries = db.collection('entries');
+  const notes = db.collection('days');
+
+  return {
+    shared: true,
+    canDownload: !!downloads,
+    async init(onUser) { onUser({ email: null, id: myId }); },
+    async signIn() {},
+    async signOut() {},
+    subscribeDay(d, cb, onError) {
+      let fields = {}, list = [];
+      const push = () => cb({ fields, entries: list });
+      const u1 = notes.doc(d).onSnapshot((s) => { fields = s.data()?.fields || {}; push(); }, onError);
+      const u2 = entries.where('date', '==', d).onSnapshot((s) => {
+        list = s.docs.map((x) => ({ id: x.id, ...x.data() }));
+        push();
+      }, onError);
+      return () => { u1(); u2(); };
+    },
+    async addEntry(d, entry, by) {
+      await entries.add({ ...entry, date: d, by, byId: myId, createdAt: Date.now() });
+    },
+    async updateEntry(d, id, entry, by) {
+      await entries.doc(id).update({ ...entry, by, byId: myId });
+    },
+    async deleteEntry(d, id) { await entries.doc(id).delete(); },
+    async setField(d, key, value) {
+      const cur = (await notes.doc(d).get()).data()?.fields || {};
+      await notes.doc(d).set({ date: d, fields: { ...cur, [key]: value } });
+    },
+    async names(ids) {
+      if (!user || !ids.length) return {};
+      const ps = await user.profiles(ids);
+      return Object.fromEntries(ids.map((i) => [i, ps[i]?.name || '']));
+    },
+    async exportAll() {
+      const out = { days: {} };
+      for (const s of (await notes.get()).docs) (out.days[s.id] ||= { fields: {}, entries: {} }).fields = s.data().fields || {};
+      for (const s of (await entries.get()).docs) {
+        const e = s.data();
+        (out.days[e.date] ||= { fields: {}, entries: {} }).entries[s.id] = e;
+      }
+      return out;
+    },
+    async download(filename, data) { await downloads.save({ filename, data }); },
+  };
+}
+
+// ── app.js ──
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = (n) => String(n).padStart(2, '0');
+const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const nowTime = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const parseDate = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+
+const state = {
+  date: isoDate(new Date()),
+  day: { fields: {}, entries: [] },
+  unsub: null,
+  name: (() => { try { return localStorage.getItem('ceci-name') || ''; } catch { return ''; } })(),
+  editing: null, // {section, id}
+  names: {}, // id persona → nome (solo su claude.ai)
+};
+
+let store;
+const status = (msg, isError = false) => {
+  const el = $('#status');
+  el.textContent = msg;
+  el.classList.toggle('error', isError);
+};
+
+// ───────────────────────── Avvio ─────────────────────────
+async function start() {
+  $('#title').textContent = `Agenda di ${BABY_NAME}`;
+  document.title = `Agenda di ${BABY_NAME}`;
+  try {
+    if (typeof window.claude?.use === 'function') {
+      store = await createClaudeStore();
+      if (!store) status('Accedi a Claude per vedere l\'agenda condivisa. Intanto i dati restano su questo dispositivo.', true);
+    }
+    store ||= FIREBASE_CONFIG ? await createFirebaseStore(FIREBASE_CONFIG) : createLocalStore();
+  } catch (e) {
+    console.error(e);
+    store = createLocalStore();
+    status('Impossibile collegarsi al server: uso i dati di questo dispositivo.', true);
+  }
+  store.init((user) => {
+    if (!user) {
+      $('#login').classList.remove('hidden');
+      $('#main').classList.add('hidden');
+      return;
+    }
+    state.user = user;
+    if (!state.name && user.email) state.name = user.email.split('@')[0];
+    $('#login').classList.add('hidden');
+    $('#main').classList.remove('hidden');
+    openDay(state.date);
+  });
+  
+}
+
+// ───────────────────────── Login ─────────────────────────
+$('#login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  $('#login-error').textContent = '';
+  try {
+    await store.signIn(f.get('email').trim(), f.get('password'));
+  } catch (err) {
+    $('#login-error').textContent = 'Email o password non corrette.';
+    console.error(err);
+  }
+});
+$('#btn-reset').addEventListener('click', async () => {
+  const email = $('#login-form').email.value.trim();
+  if (!email) { $('#login-error').textContent = 'Scrivi prima la tua email.'; return; }
+  try { await store.resetPassword(email); $('#login-error').textContent = 'Ti ho mandato una email per reimpostare la password.'; }
+  catch { $('#login-error').textContent = 'Non è stato possibile inviare l\'email.'; }
+});
+
+// ───────────────────────── Giorno ─────────────────────────
+function openDay(date) {
+  state.date = date;
+  state.unsub?.();
+  const d = parseDate(date);
+  const txt = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('#date-text').textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
+  $('#date-input').value = date;
+  $('#today').classList.toggle('hidden', date === isoDate(new Date()));
+  state.unsub = store.subscribeDay(date, async (day) => {
+    state.day = day;
+    status('');
+    render();
+    if (store.names) {
+      const ids = [...new Set(day.entries.map((e) => e.byId).filter((i) => i && !(i in state.names)))];
+      if (ids.length) { Object.assign(state.names, await store.names(ids)); render(); }
+    }
+  }, (err) => {
+    console.error(err);
+    status(err.code === 'permission-denied'
+      ? 'Questo account non è autorizzato a vedere l\'agenda.'
+      : 'Errore di collegamento: ' + err.message, true);
+  });
+}
+
+const shift = (n) => { const d = parseDate(state.date); d.setDate(d.getDate() + n); openDay(isoDate(d)); };
+$('#prev').addEventListener('click', () => shift(-1));
+$('#next').addEventListener('click', () => shift(1));
+$('#today').addEventListener('click', () => openDay(isoDate(new Date())));
+$('#date-input').addEventListener('change', (e) => e.target.value && openDay(e.target.value));
+
+// ───────────────────────── Rendering ─────────────────────────
+const sortKey = (sec, e) => {
+  const t = sec.fields.find((f) => f.type === 'time');
+  return (t && e[t.key]) || '99:99';
+};
+const itemsOf = (sec) => state.day.entries
+  .filter((e) => e.section === sec.id)
+  .sort((a, b) => sortKey(sec, a).localeCompare(sortKey(sec, b)) || (a.createdAt || 0) - (b.createdAt || 0));
+
+function render() {
+  const active = document.activeElement;
+  const focusedText = active?.dataset?.textSection;
+
+  $('#sections').innerHTML = SECTIONS.map((sec) => {
+    let body = '';
+    if (sec.type === 'tally') {
+      const items = itemsOf(sec);
+      body = `<div class="tally">${items.map((e) =>
+        `<button class="mark" data-edit="${sec.id}" data-id="${e.id}" title="${esc(e.ora || '')}${who(e) ? ' · ' + esc(who(e)) : ''}">✕</button>`).join('')}
+        <button class="mark add-mark" data-quick="${sec.id}" aria-label="Aggiungi ${esc(sec.title)}">＋</button></div>`;
+    } else if (sec.type === 'list') {
+      const items = itemsOf(sec);
+      body = items.length
+        ? `<ul class="entries">${items.map((e) => entryRow(sec, e)).join('')}</ul>`
+        : `<p class="empty">Ancora niente oggi</p>`;
+      body += `<button class="add" data-add="${sec.id}">＋ Aggiungi</button>`;
+    } else if (sec.type === 'choice') {
+      const cur = state.day.fields[sec.id];
+      body = `<div class="choices">${sec.options.map((o) =>
+        `<button class="choice ${cur === o ? 'on' : ''}" data-choice="${sec.id}" data-value="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+    } else if (sec.type === 'text') {
+      const val = focusedText === sec.id ? active.value : (state.day.fields[sec.id] || '');
+      body = `<textarea data-text-section="${sec.id}" rows="3" placeholder="${esc(sec.placeholder || '')}">${esc(val)}</textarea>`;
+    }
+    const n = sec.type === 'tally' ? `<span class="count">${itemsOf(sec).length}</span>` : '';
+    const total = sec.total ? `<p class="total">${esc(sec.total(itemsOf(sec)))}</p>` : '';
+    return `<section class="card sec-${sec.id}">
+      <h2><span>${sec.icon}</span> ${esc(sec.title)} ${n}</h2>
+      ${body}${total}
+    </section>`;
+  }).join('');
+
+  if (focusedText) {
+    const ta = document.querySelector(`[data-text-section="${focusedText}"]`);
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+}
+
+const who = (e) => (e.byId && state.names[e.byId]) || e.by || '';
+
+function entryRow(sec, e) {
+  const times = sec.fields.filter((f) => f.type === 'time').map((f) => e[f.key]).filter(Boolean);
+  const rest = sec.fields.filter((f) => f.type !== 'time' && e[f.key] !== undefined && e[f.key] !== '')
+    .map((f) => f.type === 'number' ? `${esc(e[f.key])} ${f.label.match(/\(([^)]+)\)/)?.[1] || ''}` : esc(e[f.key]));
+  return `<li><button class="entry" data-edit="${sec.id}" data-id="${e.id}">
+    <span class="time">${esc(times.join(' – ') || '—')}</span>
+    <span class="desc">${rest.join(' · ') || '&nbsp;'}</span>
+    ${who(e) ? `<span class="by">${esc(who(e))}</span>` : ''}
+  </button></li>`;
+}
+
+// ───────────────────────── Interazioni ─────────────────────────
+$('#sections').addEventListener('click', (ev) => {
+  const t = ev.target.closest('button');
+  if (!t) return;
+  if (t.dataset.quick) {
+    const sec = SECTIONS.find((s) => s.id === t.dataset.quick);
+    const data = { section: sec.id };
+    for (const f of sec.fields) data[f.key] = f.now ? nowTime() : '';
+    store.addEntry(state.date, data, state.name || '').catch(saveError);
+  } else if (t.dataset.add) openEntry(t.dataset.add);
+  else if (t.dataset.edit) openEntry(t.dataset.edit, t.dataset.id);
+  else if (t.dataset.choice) {
+    const cur = state.day.fields[t.dataset.choice];
+    const v = cur === t.dataset.value ? '' : t.dataset.value;
+    store.setField(state.date, t.dataset.choice, v).catch(saveError);
+  }
+});
+
+const timers = {};
+$('#sections').addEventListener('input', (ev) => {
+  const key = ev.target.dataset.textSection;
+  if (!key) return;
+  clearTimeout(timers[key]);
+  const date = state.date, value = ev.target.value;
+  timers[key] = setTimeout(() => store.setField(date, key, value).catch(saveError), 700);
+});
+$('#sections').addEventListener('focusout', (ev) => {
+  const key = ev.target.dataset.textSection;
+  if (!key) return;
+  clearTimeout(timers[key]);
+  if ((state.day.fields[key] || '') !== ev.target.value) store.setField(state.date, key, ev.target.value).catch(saveError);
+});
+
+function saveError(err) {
+  console.error(err);
+  status('Non sono riuscito a salvare: ' + (err.message || err), true);
+}
+
+// ───────────────────────── Finestra voce ─────────────────────────
+const dlg = $('#entry-dialog');
+function openEntry(sectionId, id) {
+  const sec = SECTIONS.find((s) => s.id === sectionId);
+  const entry = id ? state.day.entries.find((e) => e.id === id) : null;
+  state.editing = { sec, id };
+  $('#entry-title').textContent = `${sec.icon} ${sec.title}`;
+  $('#entry-delete').classList.toggle('hidden', !id);
+  delete $('#entry-delete').dataset.armed;
+  $('#entry-delete').textContent = 'Elimina';
+  $('#entry-fields').innerHTML = sec.fields.map((f) => {
+    const val = entry ? entry[f.key] ?? '' : (f.now ? nowTime() : '');
+    let input;
+    if (f.type === 'select') {
+      input = `<select name="${f.key}"><option value=""></option>${f.options.map((o) =>
+        `<option ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+    } else {
+      input = `<input name="${f.key}" type="${f.type}" value="${esc(val)}" placeholder="${esc(f.placeholder || '')}"
+        ${f.type === 'number' ? 'inputmode="decimal" step="any" min="0"' : ''}
+        ${f.type === 'number' && !entry ? 'autofocus' : ''}>`;
+    }
+    return `<label>${esc(f.label)}${input}</label>`;
+  }).join('');
+  dlg.showModal();
+}
+
+$('#entry-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const { sec, id } = state.editing;
+  const f = new FormData(ev.target);
+  const data = { section: sec.id };
+  for (const fld of sec.fields) {
+    const v = (f.get(fld.key) || '').toString().trim();
+    data[fld.key] = fld.type === 'number' && v !== '' ? Number(v.replace(',', '.')) : v;
+  }
+  dlg.close();
+  const by = state.name || '';
+  try {
+    if (id) await store.updateEntry(state.date, id, data, by);
+    else await store.addEntry(state.date, data, by);
+  } catch (err) { saveError(err); }
+});
+$('#entry-cancel').addEventListener('click', () => dlg.close());
+$('#entry-delete').addEventListener('click', async (ev) => {
+  const b = ev.currentTarget;
+  if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Sicura? Tocca ancora'; return; }
+  dlg.close();
+  try { await store.deleteEntry(state.date, state.editing.id); } catch (err) { saveError(err); }
+});
+
+// ───────────────────────── Impostazioni ─────────────────────────
+const sdlg = $('#settings-dialog');
+$('#btn-settings').addEventListener('click', () => {
+  $('#set-name').value = state.name;
+  $('#mode-info').textContent = store?.shared
+    ? `Agenda condivisa ✅${state.user?.email ? ' — sei collegato come ' + state.user.email : ''}. Tutto quello che scrivi lo vedono anche le altre persone.`
+    : 'Modalità locale: i dati restano solo su questo dispositivo. Per condividerli con Alice segui il README.';
+  $('#btn-logout').classList.toggle('hidden', !(store?.shared && state.user?.email));
+  $('#btn-export').classList.toggle('hidden', store?.download && !store.canDownload);
+  sdlg.showModal();
+});
+$('#settings-form').addEventListener('submit', () => {
+  state.name = $('#set-name').value.trim();
+  try { localStorage.setItem('ceci-name', state.name); } catch {}
+});
+$('#btn-logout').addEventListener('click', async () => { sdlg.close(); await store.signOut(); });
+$('#btn-export').addEventListener('click', async () => {
+  const data = await store.exportAll();
+  const filename = `agenda-${BABY_NAME.toLowerCase()}-${isoDate(new Date())}.json`;
+  if (store.download) { try { await store.download(filename, JSON.stringify(data, null, 2)); } catch {} return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// riapre su "oggi" quando l'app torna in primo piano il giorno dopo
+let lastToday = isoDate(new Date());
+document.addEventListener('visibilitychange', () => {
+  const t = isoDate(new Date());
+  if (document.visibilityState === 'visible' && t !== lastToday) {
+    if (state.date === lastToday && state.user) openDay(t);
+    lastToday = t;
+  }
+});
+
+start();
+
+</script>

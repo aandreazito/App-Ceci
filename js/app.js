@@ -1,5 +1,5 @@
 import { BABY_NAME, FIREBASE_CONFIG, SECTIONS } from './config.js';
-import { createLocalStore, createFirebaseStore } from './store.js';
+import { createLocalStore, createFirebaseStore, createClaudeStore } from './store.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -12,8 +12,9 @@ const state = {
   date: isoDate(new Date()),
   day: { fields: {}, entries: [] },
   unsub: null,
-  name: localStorage.getItem('ceci-name') || '',
+  name: (() => { try { return localStorage.getItem('ceci-name') || ''; } catch { return ''; } })(),
   editing: null, // {section, id}
+  names: {}, // id persona → nome (solo su claude.ai)
 };
 
 let store;
@@ -28,7 +29,11 @@ async function start() {
   $('#title').textContent = `Agenda di ${BABY_NAME}`;
   document.title = `Agenda di ${BABY_NAME}`;
   try {
-    store = FIREBASE_CONFIG ? await createFirebaseStore(FIREBASE_CONFIG) : createLocalStore();
+    if (typeof window.claude?.use === 'function') {
+      store = await createClaudeStore();
+      if (!store) status('Accedi a Claude per vedere l\'agenda condivisa. Intanto i dati restano su questo dispositivo.', true);
+    }
+    store ||= FIREBASE_CONFIG ? await createFirebaseStore(FIREBASE_CONFIG) : createLocalStore();
   } catch (e) {
     console.error(e);
     store = createLocalStore();
@@ -77,10 +82,14 @@ function openDay(date) {
   $('#date-text').textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
   $('#date-input').value = date;
   $('#today').classList.toggle('hidden', date === isoDate(new Date()));
-  state.unsub = store.subscribeDay(date, (day) => {
+  state.unsub = store.subscribeDay(date, async (day) => {
     state.day = day;
     status('');
     render();
+    if (store.names) {
+      const ids = [...new Set(day.entries.map((e) => e.byId).filter((i) => i && !(i in state.names)))];
+      if (ids.length) { Object.assign(state.names, await store.names(ids)); render(); }
+    }
   }, (err) => {
     console.error(err);
     status(err.code === 'permission-denied'
@@ -113,7 +122,7 @@ function render() {
     if (sec.type === 'tally') {
       const items = itemsOf(sec);
       body = `<div class="tally">${items.map((e) =>
-        `<button class="mark" data-edit="${sec.id}" data-id="${e.id}" title="${esc(e.ora || '')}${e.by ? ' · ' + esc(e.by) : ''}">✕</button>`).join('')}
+        `<button class="mark" data-edit="${sec.id}" data-id="${e.id}" title="${esc(e.ora || '')}${who(e) ? ' · ' + esc(who(e)) : ''}">✕</button>`).join('')}
         <button class="mark add-mark" data-quick="${sec.id}" aria-label="Aggiungi ${esc(sec.title)}">＋</button></div>`;
     } else if (sec.type === 'list') {
       const items = itemsOf(sec);
@@ -144,6 +153,8 @@ function render() {
   }
 }
 
+const who = (e) => (e.byId && state.names[e.byId]) || e.by || '';
+
 function entryRow(sec, e) {
   const times = sec.fields.filter((f) => f.type === 'time').map((f) => e[f.key]).filter(Boolean);
   const rest = sec.fields.filter((f) => f.type !== 'time' && e[f.key] !== undefined && e[f.key] !== '')
@@ -151,7 +162,7 @@ function entryRow(sec, e) {
   return `<li><button class="entry" data-edit="${sec.id}" data-id="${e.id}">
     <span class="time">${esc(times.join(' – ') || '—')}</span>
     <span class="desc">${rest.join(' · ') || '&nbsp;'}</span>
-    ${e.by ? `<span class="by">${esc(e.by)}</span>` : ''}
+    ${who(e) ? `<span class="by">${esc(who(e))}</span>` : ''}
   </button></li>`;
 }
 
@@ -201,6 +212,8 @@ function openEntry(sectionId, id) {
   state.editing = { sec, id };
   $('#entry-title').textContent = `${sec.icon} ${sec.title}`;
   $('#entry-delete').classList.toggle('hidden', !id);
+  delete $('#entry-delete').dataset.armed;
+  $('#entry-delete').textContent = 'Elimina';
   $('#entry-fields').innerHTML = sec.fields.map((f) => {
     const val = entry ? entry[f.key] ?? '' : (f.now ? nowTime() : '');
     let input;
@@ -234,8 +247,9 @@ $('#entry-form').addEventListener('submit', async (ev) => {
   } catch (err) { saveError(err); }
 });
 $('#entry-cancel').addEventListener('click', () => dlg.close());
-$('#entry-delete').addEventListener('click', async () => {
-  if (!confirm('Eliminare questa voce?')) return;
+$('#entry-delete').addEventListener('click', async (ev) => {
+  const b = ev.currentTarget;
+  if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Sicura? Tocca ancora'; return; }
   dlg.close();
   try { await store.deleteEntry(state.date, state.editing.id); } catch (err) { saveError(err); }
 });
@@ -245,22 +259,23 @@ const sdlg = $('#settings-dialog');
 $('#btn-settings').addEventListener('click', () => {
   $('#set-name').value = state.name;
   $('#mode-info').textContent = store?.shared
-    ? `Agenda condivisa ✅ — sei collegato come ${state.user?.email || '—'}.`
+    ? `Agenda condivisa ✅${state.user?.email ? ' — sei collegato come ' + state.user.email : ''}. Tutto quello che scrivi lo vedono anche le altre persone.`
     : 'Modalità locale: i dati restano solo su questo dispositivo. Per condividerli con Alice segui il README.';
-  $('#btn-logout').classList.toggle('hidden', !(store?.shared && state.user));
+  $('#btn-logout').classList.toggle('hidden', !(store?.shared && state.user?.email));
+  $('#btn-export').classList.toggle('hidden', store?.download && !store.canDownload);
   sdlg.showModal();
 });
 $('#settings-form').addEventListener('submit', () => {
   state.name = $('#set-name').value.trim();
-  localStorage.setItem('ceci-name', state.name);
+  try { localStorage.setItem('ceci-name', state.name); } catch {}
 });
 $('#btn-logout').addEventListener('click', async () => { sdlg.close(); await store.signOut(); });
 $('#btn-export').addEventListener('click', async () => {
   const data = await store.exportAll();
+  const filename = `agenda-${BABY_NAME.toLowerCase()}-${isoDate(new Date())}.json`;
+  if (store.download) { try { await store.download(filename, JSON.stringify(data, null, 2)); } catch {} return; }
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(blob), download: `agenda-${BABY_NAME.toLowerCase()}-${isoDate(new Date())}.json`,
-  });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
   a.click();
   URL.revokeObjectURL(a.href);
 });

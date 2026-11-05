@@ -18,7 +18,7 @@ export function createLocalStore() {
     return { fields: { ...x.fields }, entries: Object.entries(x.entries).map(([id, e]) => ({ id, ...e })) };
   };
   const emit = (d) => subs.get(d)?.forEach((cb) => cb(snapshot(d)));
-  const save = (d) => { localStorage.setItem(KEY, JSON.stringify(data)); emit(d); };
+  const save = (d) => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} emit(d); };
   window.addEventListener('storage', (e) => {
     if (e.key !== KEY) return;
     data = load();
@@ -114,5 +114,62 @@ export async function createFirebaseStore(config) {
       }
       return out;
     },
+  };
+}
+
+// ───────────────────── Artifact su claude.ai (condiviso) ─────────────────────
+// Usato quando l'app è aperta come Artifact dentro Claude: i dati stanno
+// nell'archivio condiviso dell'artifact, visibile a chi ha il link.
+export async function createClaudeStore() {
+  const db = await window.claude.use('db');
+  if (!db) return null;
+  const user = await window.claude.use('user');
+  const downloads = await window.claude.use('downloads');
+  const myId = (await user?.id()) || '';
+  const entries = db.collection('entries');
+  const notes = db.collection('days');
+
+  return {
+    shared: true,
+    canDownload: !!downloads,
+    async init(onUser) { onUser({ email: null, id: myId }); },
+    async signIn() {},
+    async signOut() {},
+    subscribeDay(d, cb, onError) {
+      let fields = {}, list = [];
+      const push = () => cb({ fields, entries: list });
+      const u1 = notes.doc(d).onSnapshot((s) => { fields = s.data()?.fields || {}; push(); }, onError);
+      const u2 = entries.where('date', '==', d).onSnapshot((s) => {
+        list = s.docs.map((x) => ({ id: x.id, ...x.data() }));
+        push();
+      }, onError);
+      return () => { u1(); u2(); };
+    },
+    async addEntry(d, entry, by) {
+      await entries.add({ ...entry, date: d, by, byId: myId, createdAt: Date.now() });
+    },
+    async updateEntry(d, id, entry, by) {
+      await entries.doc(id).update({ ...entry, by, byId: myId });
+    },
+    async deleteEntry(d, id) { await entries.doc(id).delete(); },
+    async setField(d, key, value) {
+      const cur = (await notes.doc(d).get()).data()?.fields || {};
+      await notes.doc(d).set({ date: d, fields: { ...cur, [key]: value } });
+    },
+    async names(ids) {
+      if (!user || !ids.length) return {};
+      const ps = await user.profiles(ids);
+      return Object.fromEntries(ids.map((i) => [i, ps[i]?.name || '']));
+    },
+    async exportAll() {
+      const out = { days: {} };
+      for (const s of (await notes.get()).docs) (out.days[s.id] ||= { fields: {}, entries: {} }).fields = s.data().fields || {};
+      for (const s of (await entries.get()).docs) {
+        const e = s.data();
+        (out.days[e.date] ||= { fields: {}, entries: {} }).entries[s.id] = e;
+      }
+      return out;
+    },
+    async download(filename, data) { await downloads.save({ filename, data }); },
   };
 }

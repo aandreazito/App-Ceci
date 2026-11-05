@@ -7,14 +7,19 @@
   --accent: #e9787a;
   --accent-soft: #fde4e2;
   --danger: #c0392b;
+  --on-accent: #ffffff;
   --radius: 16px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #1d1918; --card: #2a2423; --text: #f3ebe8; --muted: #b3a5a1;
     --line: #3b3331; --accent: #f08f90; --accent-soft: #4a2f30; color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #1d1918; --card: #2a2423; --text: #f3ebe8; --muted: #b3a5a1;
+    --line: #3b3331; --accent: #f08f90; --accent-soft: #4a2f30; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -35,7 +40,7 @@ textarea { resize: vertical; min-height: 80px; }
   position: sticky; top: 0; z-index: 5;
   display: flex; align-items: center; justify-content: space-between;
   padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
-  background: var(--accent); color: #fff;
+  background: var(--accent); color: var(--on-accent);
 }
 .topbar h1 { font-size: 1.2rem; margin: 0; }
 .icon-btn { background: none; border: 0; font-size: 1.4rem; padding: 4px 10px; border-radius: 10px; }
@@ -76,7 +81,7 @@ main, #login { max-width: 640px; margin: 0 auto; padding: 0 16px; }
 }
 .choices { display: flex; flex-wrap: wrap; gap: 6px; }
 .choice { border: 1px solid var(--line); background: var(--bg); padding: 7px 12px; border-radius: 999px; }
-.choice.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.choice.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
 .status { text-align: center; color: var(--muted); font-size: .85rem; min-height: 1em; }
 .error { color: var(--danger); }
@@ -95,7 +100,7 @@ label > input, label > select { margin-top: 4px; }
 .row button, .stack button, .login button {
   padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
 }
-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
 button.danger { color: var(--danger); }
 button.link { background: none; border: 0; color: var(--muted); text-decoration: underline; }
 .hint { font-size: .85rem; color: var(--muted); }

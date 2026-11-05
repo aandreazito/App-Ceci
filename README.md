@@ -21,6 +21,13 @@ Tutta la struttura della pagina è in [`js/config.js`](js/config.js): si possono
 aggiungere, togliere o rinominare sezioni e campi senza toccare il resto del
 codice. In fondo al file ci sono già pronte Nanna, Salute e Umore da attivare.
 
+## 0. Il modo più rapido: dentro Claude
+
+L'app è pubblicata anche come Artifact su claude.ai e si apre direttamente
+dall'app Claude (anche da telefono). I dati sono condivisi tra chi ha accesso
+al link: per Alice basta condividerla dal menu **Condividi** dell'artifact.
+Il file si rigenera con `python3 tools/build-artifact.py` → `dist/agenda-ceci.html`.
+
 ## 1. Pubblicare l'app (GitHub Pages, gratis)
 
 1. Unisci questo branch in `main`.
