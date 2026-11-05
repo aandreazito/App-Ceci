@@ -1,0 +1,106 @@
+:root {
+  --bg: #fdf7f4;
+  --card: #ffffff;
+  --text: #3a2e2c;
+  --muted: #8b7d79;
+  --line: #f0e4df;
+  --accent: #e9787a;
+  --accent-soft: #fde4e2;
+  --danger: #c0392b;
+  --radius: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1918; --card: #2a2423; --text: #f3ebe8; --muted: #b3a5a1;
+    --line: #3b3331; --accent: #f08f90; --accent-soft: #4a2f30; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+.hidden { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input, select, textarea {
+  font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%;
+}
+textarea { resize: vertical; min-height: 80px; }
+
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: var(--accent); color: #fff;
+}
+.topbar h1 { font-size: 1.2rem; margin: 0; }
+.icon-btn { background: none; border: 0; font-size: 1.4rem; padding: 4px 10px; border-radius: 10px; }
+
+main, #login { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+.datenav { display: flex; align-items: center; gap: 4px; margin: 14px 0 6px; }
+.datenav .icon-btn { font-size: 2rem; color: var(--accent); line-height: 1; }
+.date-label { flex: 1; position: relative; text-align: center; font-weight: 600; font-size: 1.05rem; }
+.date-label input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.chip {
+  display: inline-block; padding: 4px 10px; border-radius: 999px;
+  background: var(--accent-soft); font-size: .85rem; border: 0; margin: 2px;
+}
+#today { display: block; margin: 0 auto 8px; }
+.summary { text-align: center; margin-bottom: 10px; }
+
+.card {
+  background: var(--card); border-radius: var(--radius); padding: 14px 16px;
+  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.card h2 { font-size: 1.05rem; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+.card h2 .sum { margin-left: auto; font-size: .8rem; font-weight: 500; color: var(--muted); }
+
+.entries { list-style: none; margin: 0; padding: 0; }
+.entry {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: baseline;
+  text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 9px 2px;
+}
+.entries li:last-child .entry { border-bottom: 0; }
+.entry .time { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.2em; }
+.entry .desc { overflow-wrap: anywhere; }
+.entry .by { font-size: .75rem; color: var(--muted); }
+.empty { color: var(--muted); margin: 4px 0 8px; font-size: .9rem; }
+.add {
+  width: 100%; margin-top: 6px; padding: 9px; border-radius: 10px;
+  border: 1.5px dashed var(--accent); background: none; color: var(--accent); font-weight: 600;
+}
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice { border: 1px solid var(--line); background: var(--bg); padding: 7px 12px; border-radius: 999px; }
+.choice.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.status { text-align: center; color: var(--muted); font-size: .85rem; min-height: 1em; }
+.error { color: var(--danger); }
+
+dialog {
+  border: 0; border-radius: var(--radius); padding: 18px; width: min(92vw, 440px);
+  background: var(--card); color: var(--text);
+}
+dialog::backdrop { background: rgba(0,0,0,.35); }
+dialog h3 { margin: 0 0 12px; }
+label { display: block; margin-bottom: 10px; font-size: .9rem; color: var(--muted); }
+label > input, label > select { margin-top: 4px; }
+.row { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+.spacer { flex: 1; }
+.stack { display: grid; gap: 8px; }
+.row button, .stack button, .login button {
+  padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button.danger { color: var(--danger); }
+button.link { background: none; border: 0; color: var(--muted); text-decoration: underline; }
+.hint { font-size: .85rem; color: var(--muted); }
+
+.login { margin-top: 40px; text-align: center; display: grid; gap: 4px; }
+.login label { text-align: left; }
+.login .big { font-size: 3rem; margin: 0; }

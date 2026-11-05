@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Agenda di Ceci</title>
+  <meta name="description" content="Agenda giornaliera condivisa di Cecilia">
+  <meta name="theme-color" content="#f6a5a5">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Agenda Ceci">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="title">Agenda</h1>
+    <button id="btn-settings" class="icon-btn" aria-label="Impostazioni">⚙️</button>
+  </header>
+
+  <!-- Login (solo in modalità condivisa) -->
+  <section id="login" class="hidden">
+    <form id="login-form" class="card login">
+      <p class="big">👋</p>
+      <h2>Accedi all'agenda</h2>
+      <label>Email<input type="email" name="email" autocomplete="username" required></label>
+      <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+      <p id="login-error" class="error"></p>
+      <button class="primary" type="submit">Entra</button>
+      <button type="button" id="btn-reset" class="link">Password dimenticata?</button>
+    </form>
+  </section>
+
+  <main id="main" class="hidden">
+    <nav class="datenav">
+      <button id="prev" class="icon-btn" aria-label="Giorno precedente">‹</button>
+      <label class="date-label">
+        <span id="date-text"></span>
+        <input type="date" id="date-input" aria-label="Scegli il giorno">
+      </label>
+      <button id="next" class="icon-btn" aria-label="Giorno successivo">›</button>
+    </nav>
+    <button id="today" class="chip hidden">Torna a oggi</button>
+    <div id="sections"></div>
+    <p id="status" class="status"></p>
+  </main>
+
+  <dialog id="entry-dialog">
+    <form method="dialog" id="entry-form">
+      <h3 id="entry-title"></h3>
+      <div id="entry-fields"></div>
+      <div class="row">
+        <button type="button" id="entry-delete" class="danger">Elimina</button>
+        <span class="spacer"></span>
+        <button type="button" id="entry-cancel">Annulla</button>
+        <button type="submit" class="primary">Salva</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" id="settings-form">
+      <h3>Impostazioni</h3>
+      <label>Il tuo nome<input name="name" id="set-name" placeholder="es. Andrea"></label>
+      <p class="hint" id="mode-info"></p>
+      <div class="stack">
+        <button type="button" id="btn-export">⬇️ Scarica backup (JSON)</button>
+        <button type="button" id="btn-logout" class="hidden">Esci</button>
+      </div>
+      <div class="row">
+        <span class="spacer"></span>
+        <button type="submit" class="primary">Fatto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

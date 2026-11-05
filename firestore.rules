@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Solo queste persone possono leggere e scrivere l'agenda.
+    // Sostituisci con le email degli account creati in Firebase → Authentication.
+    function autorizzato() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'EMAIL_DI_ANDREA@esempio.it',
+          'EMAIL_DI_ALICE@esempio.it'
+        ];
+    }
+    match /{document=**} {
+      allow read, write: if autorizzato();
+    }
+  }
+}
