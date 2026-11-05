@@ -13,6 +13,8 @@ Andrea e Alice**. È una web‑app che si installa sul telefono come un'app vera
 - **Pasti**: ＋ Aggiungi → ora (già compilata) e ml. In fondo il **TOT** dei ml.
 - **Pisolini**: "Si è addormentata ora" e poi "Si è svegliata ora" (oppure a mano).
   Una linea del tempo dalle 6 alle 22 mostra quando ha dormito, con il totale.
+- **Settimana** (barra in basso): i pisolini dei 7 giorni uno sotto l'altro per
+  confrontare gli orari, con medie della settimana e orario tipico di ogni pisolino.
 - Tocca una riga per modificarla o eliminarla.
 - Ogni voce mostra chi l'ha inserita (il nome si imposta da ⚙️).
 - ⚙️ → *Scarica backup* per salvare tutti i dati in un file.

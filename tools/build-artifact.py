@@ -18,9 +18,10 @@ extra = """
 .topbar { top: env(safe-area-inset-top, 0px); padding-top: 10px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--accent); }
-main, #login { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main, #login, #week { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 """
-out = f"""<title>Agenda di Ceci</title>
+out = f"""<meta charset="utf-8">
+<title>Agenda di Ceci</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 {css}{extra}</style>

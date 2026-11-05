@@ -14,6 +14,8 @@ const state = {
   unsub: null,
   name: (() => { try { return localStorage.getItem('ceci-name') || ''; } catch { return ''; } })(),
   editing: null, // {section, id}
+  view: 'day', // 'day' | 'week'
+  week: { start: null, days: {}, unsubs: [] },
   names: {}, // id persona → nome (solo su claude.ai)
 };
 
@@ -43,13 +45,15 @@ async function start() {
     if (!user) {
       $('#login').classList.remove('hidden');
       $('#main').classList.add('hidden');
+      $('#week').classList.add('hidden');
+      $('.tabbar').classList.add('hidden');
       return;
     }
     state.user = user;
     if (!state.name && user.email) state.name = user.email.split('@')[0];
     $('#login').classList.add('hidden');
-    $('#main').classList.remove('hidden');
-    openDay(state.date);
+    $('.tabbar').classList.remove('hidden');
+    showView(state.view);
   });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
@@ -162,10 +166,10 @@ function render() {
 
 const toMin = (t) => { if (!t) return null; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 
-function timeline(sec, items) {
+function timeline(sec, items, date = state.date, { ticks: showTicks = true } = {}) {
   const { from, to, start, end } = sec.timeline;
   const a = start * 60, b = end * 60, span = b - a;
-  const isToday = state.date === isoDate(new Date());
+  const isToday = date === isoDate(new Date());
   const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
   const pct = (m) => (Math.min(Math.max(m, a), b) - a) / span * 100;
   const blocks = items.map((e) => {
@@ -180,8 +184,11 @@ function timeline(sec, items) {
   const ticks = [];
   for (let h = start; h <= end; h += 2) ticks.push(`<span class="tick" style="left:${pct(h * 60)}%">${h}</span>`);
   const nowMark = isToday && nowMin > a && nowMin < b ? `<span class="now" style="left:${pct(nowMin)}%"></span>` : '';
+  // linee guida ogni 2 ore
+  const grid = [];
+  for (let h = start + 2; h < end; h += 2) grid.push(`<span class="gridline" style="left:${pct(h * 60)}%"></span>`);
   return `<div class="timeline" aria-label="Linea del tempo dalle ${start} alle ${end}">
-    <div class="track">${blocks}${nowMark}</div><div class="ticks">${ticks.join('')}</div></div>`;
+    <div class="track">${grid.join('')}${blocks}${nowMark}</div>${showTicks ? `<div class="ticks">${ticks.join('')}</div>` : ''}</div>`;
 }
 
 const who = (e) => (e.byId && state.names[e.byId]) || e.by || '';
@@ -297,6 +304,113 @@ $('#entry-delete').addEventListener('click', async (ev) => {
   try { await store.deleteEntry(state.date, state.editing.id); } catch (err) { saveError(err); }
 });
 
+
+// ───────────────────────── Settimana ─────────────────────────
+const NAP = SECTIONS.find((s) => s.timeline);
+const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+const mondayOf = (iso) => { const d = parseDate(iso); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return isoDate(d); };
+const addDays = (iso, n) => { const d = parseDate(iso); d.setDate(d.getDate() + n); return isoDate(d); };
+const fmtMin = (m) => { m = Math.round(m); return m >= 60 ? `${Math.floor(m / 60)}h ${pad(m % 60)}m` : `${m}m`; };
+const fmtClock = (m) => `${pad(Math.floor(m / 60) % 24)}:${pad(Math.round(m % 60))}`;
+const napLen = (e) => {
+  const x = toMin(e[NAP.timeline.from]), y = toMin(e[NAP.timeline.to]);
+  if (x == null || y == null) return null;
+  return y >= x ? y - x : y + 1440 - x;
+};
+
+function showView(view) {
+  state.view = view;
+  $('#main').classList.toggle('hidden', view !== 'day');
+  $('#week').classList.toggle('hidden', view !== 'week');
+  document.querySelectorAll('.tabbar button').forEach((b) => b.setAttribute('aria-current', b.dataset.view === view ? 'page' : 'false'));
+  if (view === 'day') openDay(state.date);
+  else openWeek(state.week.start || mondayOf(state.date));
+  window.scrollTo(0, 0);
+}
+
+function openWeek(start) {
+  const w = state.week;
+  w.unsubs.forEach((u) => u());
+  w.start = start; w.days = {};
+  const end = addDays(start, 6);
+  const f = (iso, o) => parseDate(iso).toLocaleDateString('it-IT', o);
+  $('#week-text').textContent = `${f(start, { day: 'numeric', month: 'short' })} – ${f(end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  $('#week-this').classList.toggle('hidden', start === mondayOf(isoDate(new Date())));
+  w.unsubs = [...Array(7)].map((_, i) => {
+    const d = addDays(start, i);
+    return store.subscribeDay(d, (day) => {
+      w.days[d] = day.entries.filter((e) => e.section === NAP.id);
+      renderWeek();
+    }, (err) => status(err.message, true));
+  });
+  renderWeek();
+}
+
+function renderWeek() {
+  const w = state.week;
+  if (!NAP || !w.start) return;
+  const today = isoDate(new Date());
+  const { from, start, end } = NAP.timeline;
+  const rows = [], perDay = [];
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(w.start, i);
+    const items = (w.days[d] || []).slice().sort((a, b) => (a[from] || '').localeCompare(b[from] || ''));
+    const tot = items.reduce((s, e) => s + (napLen(e) || 0), 0);
+    if (items.length) perDay.push({ items, tot });
+    const future = d > today;
+    rows.push(`<button class="wrow ${d === today ? 'today' : ''} ${future ? 'future' : ''}" data-day="${d}">
+      <span class="wday"><b>${WEEKDAYS[i]}</b> ${parseDate(d).getDate()}</span>
+      ${timeline(NAP, items, d, { ticks: false })}
+      <span class="wtot">${items.length ? `${fmtMin(tot)}<small>${items.length} ${items.length === 1 ? 'pisolino' : 'pisolini'}</small>` : '<small>—</small>'}</span>
+    </button>`);
+  }
+  const ticks = [];
+  for (let h = start; h <= end; h += 4) ticks.push(`<span class="tick" style="left:${(h - start) / (end - start) * 100}%">${h}</span>`);
+  $('#week-chart').innerHTML = rows.join('') +
+    `<div class="wrow axis"><span class="wday"></span><div class="ticks">${ticks.join('')}</div><span class="wtot"></span></div>`;
+
+  // medie della settimana
+  const n = perDay.length;
+  const stats = [];
+  if (n) {
+    stats.push(['Pisolini al giorno', (perDay.reduce((s, x) => s + x.items.length, 0) / n).toFixed(1).replace('.', ',')]);
+    stats.push(['Sonno di giorno', fmtMin(perDay.reduce((s, x) => s + x.tot, 0) / n)]);
+  }
+  $('#week-stats').innerHTML = n
+    ? stats.map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b><small>media su ${n} ${n === 1 ? 'giorno' : 'giorni'}</small></div>`).join('')
+    : '<p class="empty">Nessun pisolino segnato in questa settimana.</p>';
+
+  // orario tipico di ogni pisolino (1°, 2°, 3°…)
+  const byIndex = [];
+  for (const { items } of perDay) items.forEach((e, i) => {
+    const x = toMin(e[from]); if (x == null) return;
+    (byIndex[i] ||= []).push({ x, len: napLen(e) });
+  });
+  $('#week-typical').innerHTML = byIndex.length ? `<h3>Orario tipico</h3><ul class="typical">${byIndex.map((arr, i) => {
+    const avgStart = arr.reduce((s, v) => s + v.x, 0) / arr.length;
+    const lens = arr.map((v) => v.len).filter((v) => v != null);
+    const avgLen = lens.length ? lens.reduce((s, v) => s + v, 0) / lens.length : null;
+    const spread = Math.max(...arr.map((v) => v.x)) - Math.min(...arr.map((v) => v.x));
+    return `<li><span class="nth">${i + 1}° pisolino</span>
+      <span>verso le <b>${fmtClock(avgStart)}</b>${avgLen != null ? ` · dura ${fmtMin(avgLen)}` : ''}</span>
+      <small>${arr.length} ${arr.length === 1 ? 'volta' : 'volte'}${arr.length > 1 ? ` · varia di ${fmtMin(spread)}` : ''}</small></li>`;
+  }).join('')}</ul>` : '';
+}
+
+$('#week-prev').addEventListener('click', () => openWeek(addDays(state.week.start, -7)));
+$('#week-next').addEventListener('click', () => openWeek(addDays(state.week.start, 7)));
+$('#week-this').addEventListener('click', () => openWeek(mondayOf(isoDate(new Date()))));
+$('#week-chart').addEventListener('click', (ev) => {
+  const r = ev.target.closest('[data-day]');
+  if (r) { state.date = r.dataset.day; showView('day'); }
+});
+document.querySelector('.tabbar').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-view]');
+  if (!b) return;
+  if (b.dataset.view === 'week') state.week.start = mondayOf(state.date);
+  showView(b.dataset.view);
+});
+
 // ───────────────────────── Impostazioni ─────────────────────────
 const sdlg = $('#settings-dialog');
 $('#btn-settings').addEventListener('click', () => {
@@ -328,11 +442,11 @@ let lastToday = isoDate(new Date());
 document.addEventListener('visibilitychange', () => {
   const t = isoDate(new Date());
   if (document.visibilityState === 'visible' && t !== lastToday) {
-    if (state.date === lastToday && state.user) openDay(t);
+    if (state.date === lastToday && state.user && state.view === 'day') openDay(t);
     lastToday = t;
   }
 });
 
-setInterval(() => { if (state.user && document.visibilityState === 'visible' && !dlg.open) render(); }, 60000);
+setInterval(() => { if (state.user && document.visibilityState === 'visible' && !dlg.open) state.view === 'day' ? render() : renderWeek(); }, 60000);
 
 start();

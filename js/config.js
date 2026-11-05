@@ -36,7 +36,7 @@ const duration = (a, b) => {
   if (x == null || y == null) return 0;
   return y >= x ? y - x : y + 1440 - x;
 };
-const fmtDuration = (m) => `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+const fmtDuration = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m` : `${m}m`);
 
 export const SECTIONS = [
   {

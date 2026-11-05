@@ -47,6 +47,26 @@
     <p id="status" class="status"></p>
   </main>
 
+  <section id="week" class="hidden">
+    <nav class="datenav">
+      <button id="week-prev" class="icon-btn" aria-label="Settimana precedente">‹</button>
+      <div class="date-label"><small class="eyebrow">Pisolini della settimana</small><span id="week-text"></span></div>
+      <button id="week-next" class="icon-btn" aria-label="Settimana successiva">›</button>
+    </nav>
+    <button id="week-this" class="chip hidden">Torna a questa settimana</button>
+    <div class="card">
+      <div id="week-chart" class="week-chart"></div>
+      <p class="hint">Tocca un giorno per aprirlo.</p>
+    </div>
+    <div id="week-stats" class="stats"></div>
+    <div id="week-typical" class="card typical-card"></div>
+  </section>
+
+  <nav class="tabbar hidden" aria-label="Sezioni">
+    <button data-view="day" aria-current="page"><span>📒</span>Giorno</button>
+    <button data-view="week"><span>📊</span>Settimana</button>
+  </nav>
+
   <dialog id="entry-dialog">
     <form method="dialog" id="entry-form">
       <h3 id="entry-title"></h3>
