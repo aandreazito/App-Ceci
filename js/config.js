@@ -71,6 +71,8 @@ export const SECTIONS = [
       { key: 'ora', label: 'Ora', type: 'time', now: true },
       { key: 'ml', label: 'Quantità (ml)', type: 'number', step: 10 },
     ],
+    // previsione del prossimo pasto e del totale di fine giornata (js/predict.js)
+    forecast: { time: 'ora', amount: 'ml' },
     total: (items) => `TOT: ${items.reduce((s, i) => s + (Number(i.ml) || 0), 0)} ml`,
     stat: (items) => ({
       value: items.reduce((s, i) => s + (Number(i.ml) || 0), 0), unit: 'ml',

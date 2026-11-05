@@ -318,6 +318,52 @@ body:has(.tabbar:not(.hidden))::after {
 .readonly .add, .readonly .add-mark, .readonly .quick { display: none; }
 .readonly .entry, .readonly .mark { cursor: default; }
 
+/* ── previsione pasti ── */
+.forecast {
+  display: grid; gap: 12px; margin: 0 0 12px; padding: 12px 14px;
+  border-radius: 16px; background: var(--pasti-bg);
+}
+.forecast.empty { gap: 2px; }
+.forecast.empty span { font-size: .85rem; color: var(--muted); }
+.fc-row { display: grid; gap: 1px; }
+.fc-label { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.fc-big { font: 600 1.25rem/1.2 var(--f-display); color: var(--ink); }
+.fc-sub { font-size: .85rem; color: var(--ink); }
+.fc-sub small { color: var(--muted); font-size: .8rem; }
+.fc-bar { position: relative; height: 12px; margin-top: 8px; border-radius: 6px; background: var(--card); overflow: visible; }
+.fc-done, .fc-proj { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; }
+.fc-done { background: var(--pasti); }
+.fc-proj { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pasti) 55%, transparent) 0 4px, transparent 4px 8px); }
+.fc-avg { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+.fc-key { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: .72rem; color: var(--muted); margin: 6px 0 0; }
+.fc-key i { display: inline-block; width: 12px; height: 8px; border-radius: 2px; margin-left: 4px; }
+.fc-key i:first-child { margin-left: 0; }
+.k-done { background: var(--pasti); }
+.k-proj { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pasti) 55%, transparent) 0 3px, transparent 3px 6px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pasti) 55%, transparent); }
+.k-avg { width: 2px !important; height: 12px !important; background: var(--ink); }
+.fc-note { margin: 0; font-size: .7rem; color: var(--muted); }
+
+/* ── settimana: titoli delle schede e grafico del latte ── */
+.card-title { font-size: 1.1rem; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
+.milk-chart { --tone: var(--pasti); --tone-bg: var(--pasti-bg); }
+.mgrid { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding-top: 18px; }
+.mcol { display: grid; grid-template-rows: 150px auto; gap: 6px; background: none; border: 0; padding: 0; min-width: 0; }
+.mcol:disabled { cursor: default; }
+.mplot { position: relative; display: flex; align-items: flex-end; justify-content: center; border-bottom: 1.5px solid var(--line); }
+.mstack { position: relative; width: 70%; max-width: 34px; display: flex; flex-direction: column; gap: 2px; }
+.mdone { background: var(--pasti); border-radius: 4px 4px 0 0; min-height: 2px; }
+.mproj + .mdone { border-radius: 0; }
+.mproj { border-radius: 4px 4px 0 0; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pasti) 55%, transparent) 0 4px, transparent 4px 8px); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pasti) 55%, transparent); }
+.mval { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding-bottom: 3px; font-size: .68rem; font-weight: 800; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mday { height: 16px; line-height: 16px; font-size: .72rem; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mday b { color: var(--ink); }
+.mcol.today .mday b { color: var(--brand); }
+.mcol.future { opacity: .4; }
+/* la linea della media attraversa solo l'area del grafico (150px) */
+.mavg { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px dashed var(--ink); opacity: .55; z-index: 1; pointer-events: none;
+}
+.mavg span { position: absolute; right: 0; bottom: 2px; font-size: .65rem; font-weight: 800; color: var(--ink); background: var(--card); padding: 0 3px; border-radius: 4px; }
+
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
 }
@@ -373,16 +419,23 @@ main, #login, #week { padding-left: max(16px, env(safe-area-inset-left, 0px)); p
   <section id="week" class="hidden">
     <nav class="datenav">
       <button id="week-prev" class="icon-btn round" aria-label="Settimana precedente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
-      <div class="date-label"><small class="eyebrow">Pisolini della settimana</small><span id="week-text"></span></div>
+      <div class="date-label"><small class="eyebrow">La settimana</small><span id="week-text"></span></div>
       <button id="week-next" class="icon-btn round" aria-label="Settimana successiva"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
     </nav>
     <button id="week-this" class="chip hidden">Torna a questa settimana</button>
     <div class="card">
+      <h2 class="card-title"><span class="badge tone-pisolini"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 14.6A7.8 7.8 0 1 1 9.4 4.5a6.2 6.2 0 0 0 10.1 10.1z"/><path d="M15 4h3l-3 3.5h3"/></svg></span><span class="hl">Pisolini</span></h2>
       <div id="week-chart" class="week-chart"></div>
       <p class="hint">Tocca un giorno per aprirlo.</p>
     </div>
     <div id="week-stats" class="stats"></div>
     <div id="week-typical" class="card typical-card"></div>
+    <div class="card tone-pasti">
+      <h2 class="card-title"><span class="badge"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3h5v3h-5z"/><path d="M8.5 6h7l1.5 3.5V19a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9.5z"/><path d="M7 12.5h4M7 16h3"/></svg></span><span class="hl">Latte al giorno</span></h2>
+      <div id="milk-chart" class="milk-chart"></div>
+      <p id="milk-key" class="fc-key"></p>
+      <p class="hint">Tocca un giorno per aprirlo.</p>
+    </div>
   </section>
 
   <nav class="tabbar hidden" aria-label="Sezioni">
@@ -435,6 +488,135 @@ const P = {
 };
 const icon = (name, cls = 'ic') =>
   `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || P.note}</svg>`;
+
+// ── predict.js ──
+// Previsioni sui pasti, a partire dalle abitudini degli ultimi giorni.
+// Funzioni pure: nessun accesso a pagina o archivio, così si possono provare da sole.
+//
+// days:  [{ date: 'YYYY-MM-DD', feeds: [{ min, ml }] }]  giorni passati, dal più vecchio
+// today: [{ min, ml }]  pasti di oggi segnati finora
+// nowMin: minuti dalla mezzanotte adesso
+
+const DAY = 1440;
+const DECAY = 0.85; // ogni giorno più vecchio pesa il 15% in meno
+const MIN_DAYS = 3;
+
+// quantile pesato: q tra 0 e 1
+function wq(values, q) {
+  const v = values.filter((x) => x.w > 0).sort((a, b) => a.x - b.x);
+  if (!v.length) return null;
+  const tot = v.reduce((s, x) => s + x.w, 0);
+  let acc = 0;
+  for (const x of v) { acc += x.w; if (acc >= q * tot - 1e-9) return x.x; }
+  return v[v.length - 1].x;
+}
+const stats = (vals) => ({ mid: wq(vals, 0.5), lo: wq(vals, 0.25), hi: wq(vals, 0.75), n: vals.length });
+const round5 = (x) => Math.round(x / 5) * 5;
+const round10 = (x) => Math.round(x / 10) * 10;
+
+// giorni utili: con pasti, senza giorni chiaramente incompleti, con un peso per l'età
+function usableDays(days, todayIso) {
+  const withFeeds = days.filter((d) => d.date < todayIso && d.feeds.length)
+    .map((d) => ({ ...d, feeds: d.feeds.slice().sort((a, b) => a.min - b.min), total: d.feeds.reduce((s, f) => s + (f.ml || 0), 0) }));
+  if (!withFeeds.length) return [];
+  const totals = withFeeds.map((d) => d.total).sort((a, b) => a - b);
+  const median = totals[Math.floor(totals.length / 2)];
+  const kept = withFeeds.filter((d) => d.total >= median * 0.6); // un giorno con pasti non segnati falserebbe le medie
+  const t = Date.parse(todayIso);
+  return kept.map((d) => ({ ...d, w: DECAY ** (Math.round((t - Date.parse(d.date)) / 864e5) - 1) }));
+}
+
+// intervalli tra un pasto e il successivo, compresi quelli notturni tra giorni consecutivi
+function intervals(days) {
+  const out = [];
+  days.forEach((d, i) => {
+    d.feeds.forEach((f, j) => {
+      const next = d.feeds[j + 1];
+      if (next) out.push({ start: f.min, gap: next.min - f.min, w: d.w });
+    });
+    const nd = days[i + 1];
+    if (nd && Date.parse(nd.date) - Date.parse(d.date) === 864e5 && d.feeds.length && nd.feeds.length) {
+      const last = d.feeds[d.feeds.length - 1];
+      out.push({ start: last.min, gap: DAY - last.min + nd.feeds[0].min, w: d.w });
+    }
+  });
+  return out.filter((x) => x.gap > 0);
+}
+
+// prende i valori vicini a un orario, allargando la finestra se sono pochi
+function near(items, key, min, get) {
+  for (const win of [90, 150, 240, DAY]) {
+    const sel = items.filter((x) => Math.abs(x[key] - min) <= win);
+    if (sel.length >= 4 || win === DAY) return sel.map((x) => ({ x: get(x), w: x.w }));
+  }
+  return [];
+}
+
+function typicalGap(gaps, at) { return stats(near(gaps, 'start', at, (x) => x.gap)); }
+function typicalMl(feeds, at) { return stats(near(feeds, 'min', at, (x) => x.ml)); }
+
+function predict(days, today, nowMin, todayIso) {
+  const ok = usableDays(days, todayIso);
+  if (ok.length < MIN_DAYS) return { needDays: MIN_DAYS - ok.length };
+
+  const gaps = intervals(ok);
+  const feeds = ok.flatMap((d) => d.feeds.filter((f) => f.ml > 0).map((f) => ({ ...f, w: d.w })));
+  const todaySorted = today.slice().sort((a, b) => a.min - b.min);
+  const soFar = todaySorted.reduce((s, f) => s + (f.ml || 0), 0);
+  const last = todaySorted[todaySorted.length - 1];
+
+  // 1) prossimo pasto
+  let next;
+  if (last) {
+    const g = typicalGap(gaps, last.min);
+    next = { at: last.min + g.mid, from: last.min + g.lo, to: last.min + g.hi };
+  } else {
+    const first = stats(ok.map((d) => ({ x: d.feeds[0].min, w: d.w })));
+    next = { at: first.mid, from: first.lo, to: first.hi };
+  }
+  const ml = typicalMl(feeds, next.at % DAY);
+  next.ml = round5(ml.mid); next.mlFrom = round5(ml.lo); next.mlTo = round5(ml.hi);
+  next.overdue = next.at < nowMin;
+  next.stale = nowMin - next.at > 120; // in ritardo di oltre 2 ore: forse un pasto non è stato segnato
+  next.tomorrow = next.at >= DAY;
+
+  // 2) totale a fine giornata
+  const dayTotals = ok.map((d) => ({ x: d.total, w: d.w }));
+  const usual = stats(dayTotals);
+  let total;
+  if (!last) {
+    total = { mid: usual.mid, lo: usual.lo, hi: usual.hi };
+  } else {
+    // a) simulo i pasti che mancano fino a mezzanotte
+    // un pasto "saltato" nel passato non si recupera: il prossimo arriva al più presto adesso
+    let t = last.min, sim = soFar;
+    for (let i = 0; i < 24; i++) {
+      t += typicalGap(gaps, t).mid;
+      if (i === 0) t = Math.max(t, nowMin);
+      if (t >= DAY) break;
+      sim += typicalMl(feeds, t).mid;
+    }
+    // b) quanta parte del totale aveva di solito già preso a quest'ora
+    const at = Math.max(nowMin, last.min);
+    const perDay = ok.map((d) => {
+      const done = d.feeds.filter((f) => f.min <= at).reduce((s, f) => s + (f.ml || 0), 0);
+      return { x: d.total ? done / d.total : 0, w: d.w };
+    }).filter((f) => f.x >= 0.15);
+    let mid = sim, lo = sim, hi = sim;
+    if (perDay.length >= 2) {
+      const proj = perDay.map((f) => ({ x: soFar / f.x, w: f.w }));
+      const p = stats(proj);
+      mid = (sim + p.mid) / 2;
+      lo = Math.min(sim, p.lo); hi = Math.max(sim, p.hi);
+    }
+    total = { mid: Math.max(mid, soFar), lo: Math.max(lo, soFar), hi: Math.max(hi, soFar) };
+  }
+  for (const k of ['mid', 'lo', 'hi']) total[k] = round10(total[k]);
+
+  const recent = ok.slice(-7);
+  const avg7 = round10(recent.reduce((s, d) => s + d.total, 0) / recent.length);
+  return { next, total, soFar, avg7, days: ok.length };
+}
 
 // ── config.js ──
 // ─────────────────────────────────────────────────────────────
@@ -510,6 +692,8 @@ const SECTIONS = [
       { key: 'ora', label: 'Ora', type: 'time', now: true },
       { key: 'ml', label: 'Quantità (ml)', type: 'number', step: 10 },
     ],
+    // previsione del prossimo pasto e del totale di fine giornata (js/predict.js)
+    forecast: { time: 'ora', amount: 'ml' },
     total: (items) => `TOT: ${items.reduce((s, i) => s + (Number(i.ml) || 0), 0)} ml`,
     stat: (items) => ({
       value: items.reduce((s, i) => s + (Number(i.ml) || 0), 0), unit: 'ml',
@@ -605,6 +789,7 @@ function createLocalStore() {
     async deleteEntry(d, id) { delete day(d).entries[id]; save(d); },
     async setField(d, key, value) { day(d).fields[key] = value; save(d); },
     async exportAll() { return data; },
+    async getDays(dates) { return Object.fromEntries(dates.map((d) => [d, snapshot(d).entries])); },
   };
 }
 
@@ -665,6 +850,10 @@ async function createFirebaseStore(config) {
     },
     async setField(d, key, value) {
       await fs.setDoc(dayDoc(d), { fields: { [key]: value }, updatedAt: fs.serverTimestamp() }, { merge: true });
+    },
+    async getDays(dates) {
+      const res = await Promise.all(dates.map((d) => fs.getDocs(entriesCol(d))));
+      return Object.fromEntries(dates.map((d, i) => [d, res[i].docs.map((x) => ({ id: x.id, ...x.data() }))]));
     },
     async exportAll() {
       const out = { days: {} };
@@ -738,6 +927,13 @@ async function createClaudeStore() {
       return out;
     },
     async download(filename, data) { await downloads.save({ filename, data }); },
+    async getDays(dates) {
+      const sorted = dates.slice().sort();
+      const snap = await entries.where('date', '>=', sorted[0]).where('date', '<=', sorted[sorted.length - 1]).get();
+      const out = Object.fromEntries(dates.map((d) => [d, []]));
+      for (const x of snap.docs) { const e = x.data(); if (out[e.date]) out[e.date].push({ id: x.id, ...e }); }
+      return out;
+    },
   };
 }
 
@@ -831,6 +1027,7 @@ function openDay(date) {
   $('#date-text').textContent = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
   $('#date-input').value = date;
   $('#today').classList.toggle('hidden', date === isoDate(new Date()));
+  loadHistory();
   state.unsub = store.subscribeDay(date, async (day) => {
     state.day = day;
     status('');
@@ -852,6 +1049,70 @@ $('#prev').addEventListener('click', () => shift(-1));
 $('#next').addEventListener('click', () => shift(1));
 $('#today').addEventListener('click', () => openDay(isoDate(new Date())));
 $('#date-input').addEventListener('change', (e) => e.target.value && openDay(e.target.value));
+
+// ───────────────────────── Previsione pasti ─────────────────────────
+const FEED = SECTIONS.find((s) => s.forecast);
+const HISTORY_DAYS = 14;
+const history = { for: null, at: 0, days: [] };
+const feedsOf = (entries) => entries.filter((e) => e.section === FEED.id)
+  .map((e) => ({ min: toMin(e[FEED.forecast.time]), ml: Number(e[FEED.forecast.amount]) || 0 }))
+  .filter((f) => f.min != null);
+
+async function loadHistory(force = false) {
+  if (!FEED) return;
+  const today = isoDate(new Date());
+  if (!force && history.for === today && Date.now() - history.at < 10 * 60e3) return;
+  const dates = [...Array(HISTORY_DAYS)].map((_, i) => addDays(today, -HISTORY_DAYS + i));
+  try {
+    const byDay = await store.getDays(dates);
+    history.days = dates.map((d) => ({ date: d, feeds: feedsOf(byDay[d] || []) }));
+    history.for = today; history.at = Date.now();
+    state.view === 'day' ? render() : renderWeek();
+  } catch (err) { console.error(err); }
+}
+
+function forecastFor(todayEntries) {
+  if (!FEED || history.for !== isoDate(new Date())) return null;
+  const now = new Date();
+  return predict(history.days, feedsOf(todayEntries), now.getHours() * 60 + now.getMinutes(), history.for);
+}
+
+const clock = (m) => `${pad(Math.floor(m / 60) % 24)}:${pad(Math.round(m % 60))}`;
+const range = (a, b, f = (x) => x) => (a === b ? '' : `${f(a)}–${f(b)}`);
+
+function forecastBox() {
+  const f = forecastFor(state.day.entries);
+  if (!f) return '';
+  if (f.needDays) {
+    return `<div class="forecast empty"><b>Previsioni in arrivo</b>
+      <span>Servono ancora ${f.needDays} ${f.needDays === 1 ? 'giorno' : 'giorni'} di pasti segnati per prevedere il prossimo.</span></div>`;
+  }
+  const n = f.next, t = f.total;
+  const lastFeed = feedsOf(state.day.entries).sort((a, b) => b.min - a.min)[0];
+  if (n.stale && lastFeed) {
+    return `<div class="forecast empty"><b>Ha mangiato dopo le ${clock(lastFeed.min)}?</b>
+      <span>L'ultimo pasto segnato è di parecchie ore fa. Se ne mancano, aggiungili per avere previsioni giuste.</span></div>`;
+  }
+  const when = n.tomorrow ? `domani verso le ${clock(n.at)}` : n.overdue ? `a momenti` : `verso le ${clock(n.at)}`;
+  const whenNote = n.overdue ? `era previsto per le ${clock(n.at)}` : range(n.from, n.to, clock) ? `di solito tra le ${range(n.from, n.to, clock).replace('–', ' e le ')}` : '';
+  const ml = `circa ${n.ml} ml` + (range(n.mlFrom, n.mlTo) ? ` <small>(${range(n.mlFrom, n.mlTo)})</small>` : '');
+  const scale = Math.max(t.hi, f.avg7, 1) * 1.08;
+  const pc = (x) => `${Math.min(x / scale * 100, 100).toFixed(1)}%`;
+  return `<div class="forecast">
+    <div class="fc-row"><span class="fc-label">Prossimo pasto</span>
+      <b class="fc-big">${when}</b><span class="fc-sub">${ml}${whenNote ? ` · ${whenNote}` : ''}</span></div>
+    <div class="fc-row"><span class="fc-label">Fine giornata</span>
+      <b class="fc-big">circa ${t.mid} ml</b>
+      <span class="fc-sub">${range(t.lo, t.hi) ? `tra ${t.lo} e ${t.hi} ml · ` : ''}media ultimi giorni ${f.avg7} ml</span>
+      <div class="fc-bar" role="img" aria-label="Finora ${f.soFar} ml, previsti circa ${t.mid} ml, media ${f.avg7} ml">
+        <span class="fc-proj" style="width:${pc(t.mid)}"></span><span class="fc-done" style="width:${pc(f.soFar)}"></span>
+        <span class="fc-avg" style="left:${pc(f.avg7)}" title="media ${f.avg7} ml"></span>
+      </div>
+      <span class="fc-key"><i class="k-done"></i>finora ${f.soFar} ml <i class="k-proj"></i>previsione <i class="k-avg"></i>media</span>
+    </div>
+    <p class="fc-note">Stima dalle abitudini degli ultimi ${f.days} giorni, non un'indicazione medica.</p>
+  </div>`;
+}
 
 // ───────────────────────── Rendering ─────────────────────────
 const sortKey = (sec, e) => {
@@ -886,6 +1147,7 @@ function render() {
         ? `<ul class="entries">${items.map((e) => entryRow(sec, e)).join('')}</ul>`
         : `<p class="empty">Ancora niente oggi</p>`;
       if (sec.timeline) body = timeline(sec, items) + body;
+      if (sec.forecast && state.date === isoDate(new Date())) body = forecastBox() + body;
       if (sec.quick) {
         const open = items.find((e) => e[sec.quick.from] && !e[sec.quick.to]);
         body += open
@@ -1102,10 +1364,11 @@ function openWeek(start) {
   const f = (iso, o) => parseDate(iso).toLocaleDateString('it-IT', o);
   $('#week-text').textContent = `${f(start, { day: 'numeric', month: 'short' })} – ${f(end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
   $('#week-this').classList.toggle('hidden', start === mondayOf(isoDate(new Date())));
+  loadHistory();
   w.unsubs = [...Array(7)].map((_, i) => {
     const d = addDays(start, i);
     return store.subscribeDay(d, (day) => {
-      w.days[d] = day.entries.filter((e) => e.section === NAP.id);
+      w.days[d] = day.entries;
       renderWeek();
     }, (err) => status(err.message, true));
   });
@@ -1114,13 +1377,15 @@ function openWeek(start) {
 
 function renderWeek() {
   const w = state.week;
-  if (!NAP || !w.start) return;
+  if (!w.start) return;
+  renderMilkWeek();
+  if (!NAP) return;
   const today = isoDate(new Date());
   const { from, start, end } = NAP.timeline;
   const rows = [], perDay = [];
   for (let i = 0; i < 7; i++) {
     const d = addDays(w.start, i);
-    const items = (w.days[d] || []).slice().sort((a, b) => (a[from] || '').localeCompare(b[from] || ''));
+    const items = (w.days[d] || []).filter((e) => e.section === NAP.id).sort((a, b) => (a[from] || '').localeCompare(b[from] || ''));
     const tot = items.reduce((s, e) => s + (napLen(e) || 0), 0);
     if (items.length) perDay.push({ items, tot });
     const future = d > today;
@@ -1163,9 +1428,51 @@ function renderWeek() {
   }).join('')}</ul>` : '';
 }
 
+// grafico del latte: una colonna per giorno, oggi con la proiezione a fine giornata
+function renderMilkWeek() {
+  if (!FEED) return;
+  const w = state.week, today = isoDate(new Date());
+  const cols = [...Array(7)].map((_, i) => {
+    const d = addDays(w.start, i);
+    const feeds = feedsOf(w.days[d] || []);
+    return { d, i, total: feeds.reduce((s, f) => s + f.ml, 0), n: feeds.length };
+  });
+  const fc = cols.some((c) => c.d === today) ? forecastFor(w.days[today] || []) : null;
+  const proj = fc && !fc.needDays ? fc.total.mid : null;
+  const past = cols.filter((c) => c.d < today && c.total > 0);
+  const avg = past.length ? Math.round(past.reduce((s, c) => s + c.total, 0) / past.length / 10) * 10 : null;
+  const max = Math.max(...cols.map((c) => c.total), proj || 0, avg || 0, 100);
+  const top = Math.ceil(max * 1.12 / 100) * 100;
+  const h = (x) => `${(x / top * 100).toFixed(1)}%`;
+  const bars = cols.map((c) => {
+    const isToday = c.d === today, future = c.d > today;
+    const extra = isToday && proj > c.total ? proj - c.total : 0;
+    const label = c.total || extra ? (extra ? `~${proj}` : c.total) : '';
+    const tip = future ? '' : `${WEEKDAYS[c.i]} ${parseDate(c.d).getDate()}: ${c.total} ml in ${c.n} ${c.n === 1 ? 'pasto' : 'pasti'}${extra ? `, previsti ~${proj} ml` : ''}`;
+    return `<button class="mcol ${isToday ? 'today' : ''} ${future ? 'future' : ''}" data-day="${c.d}" ${tip ? `title="${tip}" aria-label="${tip}"` : 'disabled'}>
+      <span class="mplot"><span class="mstack" style="height:${h(c.total + extra)}">
+        <span class="mval">${label}</span>
+        ${extra ? `<span class="mproj" style="flex:${extra}"></span>` : ''}
+        ${c.total ? `<span class="mdone" style="flex:${c.total}"></span>` : ''}
+      </span></span>
+      <span class="mday"><b>${WEEKDAYS[c.i]}</b> ${parseDate(c.d).getDate()}</span>
+    </button>`;
+  }).join('');
+  // 22px = altezza dell'etichetta del giorno (16px) + spazio (6px) sotto l'area del grafico alta 150px
+  const avgLine = avg ? `<span class="mavg" style="bottom:calc(22px + ${(avg / top * 150).toFixed(1)}px)"><span>media ${avg} ml</span></span>` : '';
+  $('#milk-chart').innerHTML = `<div class="mgrid">${avgLine}${bars}</div>`;
+  $('#milk-key').innerHTML = proj
+    ? `<i class="k-done"></i>bevuto <i class="k-proj"></i>previsione di oggi <i class="k-avg"></i>media dei giorni passati`
+    : avg ? `<i class="k-done"></i>bevuto <i class="k-avg"></i>media dei giorni passati` : 'Nessun pasto segnato in questa settimana.';
+}
+
 $('#week-prev').addEventListener('click', () => openWeek(addDays(state.week.start, -7)));
 $('#week-next').addEventListener('click', () => openWeek(addDays(state.week.start, 7)));
 $('#week-this').addEventListener('click', () => openWeek(mondayOf(isoDate(new Date()))));
+$('#milk-chart').addEventListener('click', (ev) => {
+  const r = ev.target.closest('[data-day]');
+  if (r && !r.disabled) { state.date = r.dataset.day; showView('day'); }
+});
 $('#week-chart').addEventListener('click', (ev) => {
   const r = ev.target.closest('[data-day]');
   if (r) { state.date = r.dataset.day; showView('day'); }

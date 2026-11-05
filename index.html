@@ -59,16 +59,23 @@
   <section id="week" class="hidden">
     <nav class="datenav">
       <button id="week-prev" class="icon-btn round" aria-label="Settimana precedente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
-      <div class="date-label"><small class="eyebrow">Pisolini della settimana</small><span id="week-text"></span></div>
+      <div class="date-label"><small class="eyebrow">La settimana</small><span id="week-text"></span></div>
       <button id="week-next" class="icon-btn round" aria-label="Settimana successiva"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
     </nav>
     <button id="week-this" class="chip hidden">Torna a questa settimana</button>
     <div class="card">
+      <h2 class="card-title"><span class="badge tone-pisolini"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 14.6A7.8 7.8 0 1 1 9.4 4.5a6.2 6.2 0 0 0 10.1 10.1z"/><path d="M15 4h3l-3 3.5h3"/></svg></span><span class="hl">Pisolini</span></h2>
       <div id="week-chart" class="week-chart"></div>
       <p class="hint">Tocca un giorno per aprirlo.</p>
     </div>
     <div id="week-stats" class="stats"></div>
     <div id="week-typical" class="card typical-card"></div>
+    <div class="card tone-pasti">
+      <h2 class="card-title"><span class="badge"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3h5v3h-5z"/><path d="M8.5 6h7l1.5 3.5V19a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9.5z"/><path d="M7 12.5h4M7 16h3"/></svg></span><span class="hl">Latte al giorno</span></h2>
+      <div id="milk-chart" class="milk-chart"></div>
+      <p id="milk-key" class="fc-key"></p>
+      <p class="hint">Tocca un giorno per aprirlo.</p>
+    </div>
   </section>
 
   <nav class="tabbar hidden" aria-label="Sezioni">
