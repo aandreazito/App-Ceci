@@ -19,6 +19,8 @@
   --nap: #7476d9;      --nap-bg: #ebeafc;
   --note: #c99512;     --note-bg: #fbf3d6;
   --track: #f6eff1;
+  --bar: #3a3242;          /* barra in basso: scura, si stacca dalla pagina */
+  --bar-text: #d9cfe0;
 
   --f-display: "Fredoka", "Nunito", ui-rounded, system-ui, sans-serif;
   --f-body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -34,6 +36,7 @@
     --pipi: #7fc1ef; --pipi-bg: #1d3245; --cacca: #d9a878; --cacca-bg: #3a2e24;
     --pasti: #f5a47c; --pasti-bg: #43291f; --nap: #a6a8f7; --nap-bg: #2c2a55;
     --note: #ecc458; --note-bg: #3b331b; --track: #2f2940;
+    --bar: #f2ecf7; --bar-text: #5b5068;
     color-scheme: dark;
   }
 }
@@ -44,6 +47,7 @@
   --pipi: #7fc1ef; --pipi-bg: #1d3245; --cacca: #d9a878; --cacca-bg: #3a2e24;
   --pasti: #f5a47c; --pasti-bg: #43291f; --nap: #a6a8f7; --nap-bg: #2c2a55;
   --note: #ecc458; --note-bg: #3b331b; --track: #2f2940;
+    --bar: #f2ecf7; --bar-text: #5b5068;
   color-scheme: dark;
 }
 
@@ -55,6 +59,8 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+button, input, select, textarea, a { touch-action: manipulation; } /* niente zoom col doppio tocco */
 body {
   font: 16px/1.45 var(--f-body);
   background: var(--paper); color: var(--ink);
@@ -64,8 +70,9 @@ body {
 .hidden { display: none !important; }
 button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 3px solid var(--hl); outline-offset: 2px; }
+/* almeno 16px: sotto questa misura iPhone fa lo zoom quando tocchi un campo */
 input, select, textarea {
-  font: inherit; color: var(--ink); background: var(--paper);
+  font: inherit; font-size: max(16px, 1rem); color: var(--ink); background: var(--paper);
   border: 1.5px solid var(--line); border-radius: 14px; padding: 11px 13px; width: 100%;
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--tone, var(--brand)); }
@@ -248,11 +255,18 @@ button.link { background: none; color: var(--muted); text-decoration: underline;
   position: fixed; left: 50%; transform: translateX(-50%); z-index: 6;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   display: flex; gap: 4px; padding: 5px;
-  background: var(--card); border-radius: 999px; box-shadow: 0 8px 28px rgba(60, 30, 60, .16);
+  background: var(--bar); border-radius: 999px;
+  box-shadow: 0 10px 30px rgba(30, 15, 35, .35), 0 0 0 4px var(--paper);
+}
+/* sfumatura sopra la barra: il contenuto non le scorre sotto confondendosi */
+body:has(.tabbar:not(.hidden))::after {
+  content: ""; position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; pointer-events: none;
+  height: calc(90px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--paper) 45%, transparent);
 }
 .tabbar button {
   display: flex; align-items: center; gap: 7px; background: none; border: 0;
-  padding: 10px 18px; border-radius: 999px; font-weight: 800; font-size: .9rem; color: var(--muted);
+  padding: 10px 18px; border-radius: 999px; font-weight: 800; font-size: .9rem; color: var(--bar-text);
 }
 .tabbar svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tabbar button[aria-current="page"] { background: var(--brand); color: var(--on-tone); }
