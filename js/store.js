@@ -41,6 +41,7 @@ export function createLocalStore() {
     async deleteEntry(d, id) { delete day(d).entries[id]; save(d); },
     async setField(d, key, value) { day(d).fields[key] = value; save(d); },
     async exportAll() { return data; },
+    async getDays(dates) { return Object.fromEntries(dates.map((d) => [d, snapshot(d).entries])); },
   };
 }
 
@@ -101,6 +102,10 @@ export async function createFirebaseStore(config) {
     },
     async setField(d, key, value) {
       await fs.setDoc(dayDoc(d), { fields: { [key]: value }, updatedAt: fs.serverTimestamp() }, { merge: true });
+    },
+    async getDays(dates) {
+      const res = await Promise.all(dates.map((d) => fs.getDocs(entriesCol(d))));
+      return Object.fromEntries(dates.map((d, i) => [d, res[i].docs.map((x) => ({ id: x.id, ...x.data() }))]));
     },
     async exportAll() {
       const out = { days: {} };
@@ -174,5 +179,12 @@ export async function createClaudeStore() {
       return out;
     },
     async download(filename, data) { await downloads.save({ filename, data }); },
+    async getDays(dates) {
+      const sorted = dates.slice().sort();
+      const snap = await entries.where('date', '>=', sorted[0]).where('date', '<=', sorted[sorted.length - 1]).get();
+      const out = Object.fromEntries(dates.map((d) => [d, []]));
+      for (const x of snap.docs) { const e = x.data(); if (out[e.date]) out[e.date].push({ id: x.id, ...e }); }
+      return out;
+    },
   };
 }

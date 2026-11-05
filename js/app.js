@@ -1,5 +1,6 @@
 import { BABY_NAME, FIREBASE_CONFIG, SECTIONS } from './config.js';
 import { icon } from './icons.js';
+import { predict } from './predict.js';
 import { createLocalStore, createFirebaseStore, createClaudeStore } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -90,6 +91,7 @@ function openDay(date) {
   $('#date-text').textContent = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
   $('#date-input').value = date;
   $('#today').classList.toggle('hidden', date === isoDate(new Date()));
+  loadHistory();
   state.unsub = store.subscribeDay(date, async (day) => {
     state.day = day;
     status('');
@@ -111,6 +113,70 @@ $('#prev').addEventListener('click', () => shift(-1));
 $('#next').addEventListener('click', () => shift(1));
 $('#today').addEventListener('click', () => openDay(isoDate(new Date())));
 $('#date-input').addEventListener('change', (e) => e.target.value && openDay(e.target.value));
+
+// ───────────────────────── Previsione pasti ─────────────────────────
+const FEED = SECTIONS.find((s) => s.forecast);
+const HISTORY_DAYS = 14;
+const history = { for: null, at: 0, days: [] };
+const feedsOf = (entries) => entries.filter((e) => e.section === FEED.id)
+  .map((e) => ({ min: toMin(e[FEED.forecast.time]), ml: Number(e[FEED.forecast.amount]) || 0 }))
+  .filter((f) => f.min != null);
+
+async function loadHistory(force = false) {
+  if (!FEED) return;
+  const today = isoDate(new Date());
+  if (!force && history.for === today && Date.now() - history.at < 10 * 60e3) return;
+  const dates = [...Array(HISTORY_DAYS)].map((_, i) => addDays(today, -HISTORY_DAYS + i));
+  try {
+    const byDay = await store.getDays(dates);
+    history.days = dates.map((d) => ({ date: d, feeds: feedsOf(byDay[d] || []) }));
+    history.for = today; history.at = Date.now();
+    state.view === 'day' ? render() : renderWeek();
+  } catch (err) { console.error(err); }
+}
+
+function forecastFor(todayEntries) {
+  if (!FEED || history.for !== isoDate(new Date())) return null;
+  const now = new Date();
+  return predict(history.days, feedsOf(todayEntries), now.getHours() * 60 + now.getMinutes(), history.for);
+}
+
+const clock = (m) => `${pad(Math.floor(m / 60) % 24)}:${pad(Math.round(m % 60))}`;
+const range = (a, b, f = (x) => x) => (a === b ? '' : `${f(a)}–${f(b)}`);
+
+function forecastBox() {
+  const f = forecastFor(state.day.entries);
+  if (!f) return '';
+  if (f.needDays) {
+    return `<div class="forecast empty"><b>Previsioni in arrivo</b>
+      <span>Servono ancora ${f.needDays} ${f.needDays === 1 ? 'giorno' : 'giorni'} di pasti segnati per prevedere il prossimo.</span></div>`;
+  }
+  const n = f.next, t = f.total;
+  const lastFeed = feedsOf(state.day.entries).sort((a, b) => b.min - a.min)[0];
+  if (n.stale && lastFeed) {
+    return `<div class="forecast empty"><b>Ha mangiato dopo le ${clock(lastFeed.min)}?</b>
+      <span>L'ultimo pasto segnato è di parecchie ore fa. Se ne mancano, aggiungili per avere previsioni giuste.</span></div>`;
+  }
+  const when = n.tomorrow ? `domani verso le ${clock(n.at)}` : n.overdue ? `a momenti` : `verso le ${clock(n.at)}`;
+  const whenNote = n.overdue ? `era previsto per le ${clock(n.at)}` : range(n.from, n.to, clock) ? `di solito tra le ${range(n.from, n.to, clock).replace('–', ' e le ')}` : '';
+  const ml = `circa ${n.ml} ml` + (range(n.mlFrom, n.mlTo) ? ` <small>(${range(n.mlFrom, n.mlTo)})</small>` : '');
+  const scale = Math.max(t.hi, f.avg7, 1) * 1.08;
+  const pc = (x) => `${Math.min(x / scale * 100, 100).toFixed(1)}%`;
+  return `<div class="forecast">
+    <div class="fc-row"><span class="fc-label">Prossimo pasto</span>
+      <b class="fc-big">${when}</b><span class="fc-sub">${ml}${whenNote ? ` · ${whenNote}` : ''}</span></div>
+    <div class="fc-row"><span class="fc-label">Fine giornata</span>
+      <b class="fc-big">circa ${t.mid} ml</b>
+      <span class="fc-sub">${range(t.lo, t.hi) ? `tra ${t.lo} e ${t.hi} ml · ` : ''}media ultimi giorni ${f.avg7} ml</span>
+      <div class="fc-bar" role="img" aria-label="Finora ${f.soFar} ml, previsti circa ${t.mid} ml, media ${f.avg7} ml">
+        <span class="fc-proj" style="width:${pc(t.mid)}"></span><span class="fc-done" style="width:${pc(f.soFar)}"></span>
+        <span class="fc-avg" style="left:${pc(f.avg7)}" title="media ${f.avg7} ml"></span>
+      </div>
+      <span class="fc-key"><i class="k-done"></i>finora ${f.soFar} ml <i class="k-proj"></i>previsione <i class="k-avg"></i>media</span>
+    </div>
+    <p class="fc-note">Stima dalle abitudini degli ultimi ${f.days} giorni, non un'indicazione medica.</p>
+  </div>`;
+}
 
 // ───────────────────────── Rendering ─────────────────────────
 const sortKey = (sec, e) => {
@@ -145,6 +211,7 @@ function render() {
         ? `<ul class="entries">${items.map((e) => entryRow(sec, e)).join('')}</ul>`
         : `<p class="empty">Ancora niente oggi</p>`;
       if (sec.timeline) body = timeline(sec, items) + body;
+      if (sec.forecast && state.date === isoDate(new Date())) body = forecastBox() + body;
       if (sec.quick) {
         const open = items.find((e) => e[sec.quick.from] && !e[sec.quick.to]);
         body += open
@@ -361,10 +428,11 @@ function openWeek(start) {
   const f = (iso, o) => parseDate(iso).toLocaleDateString('it-IT', o);
   $('#week-text').textContent = `${f(start, { day: 'numeric', month: 'short' })} – ${f(end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
   $('#week-this').classList.toggle('hidden', start === mondayOf(isoDate(new Date())));
+  loadHistory();
   w.unsubs = [...Array(7)].map((_, i) => {
     const d = addDays(start, i);
     return store.subscribeDay(d, (day) => {
-      w.days[d] = day.entries.filter((e) => e.section === NAP.id);
+      w.days[d] = day.entries;
       renderWeek();
     }, (err) => status(err.message, true));
   });
@@ -373,13 +441,15 @@ function openWeek(start) {
 
 function renderWeek() {
   const w = state.week;
-  if (!NAP || !w.start) return;
+  if (!w.start) return;
+  renderMilkWeek();
+  if (!NAP) return;
   const today = isoDate(new Date());
   const { from, start, end } = NAP.timeline;
   const rows = [], perDay = [];
   for (let i = 0; i < 7; i++) {
     const d = addDays(w.start, i);
-    const items = (w.days[d] || []).slice().sort((a, b) => (a[from] || '').localeCompare(b[from] || ''));
+    const items = (w.days[d] || []).filter((e) => e.section === NAP.id).sort((a, b) => (a[from] || '').localeCompare(b[from] || ''));
     const tot = items.reduce((s, e) => s + (napLen(e) || 0), 0);
     if (items.length) perDay.push({ items, tot });
     const future = d > today;
@@ -422,9 +492,51 @@ function renderWeek() {
   }).join('')}</ul>` : '';
 }
 
+// grafico del latte: una colonna per giorno, oggi con la proiezione a fine giornata
+function renderMilkWeek() {
+  if (!FEED) return;
+  const w = state.week, today = isoDate(new Date());
+  const cols = [...Array(7)].map((_, i) => {
+    const d = addDays(w.start, i);
+    const feeds = feedsOf(w.days[d] || []);
+    return { d, i, total: feeds.reduce((s, f) => s + f.ml, 0), n: feeds.length };
+  });
+  const fc = cols.some((c) => c.d === today) ? forecastFor(w.days[today] || []) : null;
+  const proj = fc && !fc.needDays ? fc.total.mid : null;
+  const past = cols.filter((c) => c.d < today && c.total > 0);
+  const avg = past.length ? Math.round(past.reduce((s, c) => s + c.total, 0) / past.length / 10) * 10 : null;
+  const max = Math.max(...cols.map((c) => c.total), proj || 0, avg || 0, 100);
+  const top = Math.ceil(max * 1.12 / 100) * 100;
+  const h = (x) => `${(x / top * 100).toFixed(1)}%`;
+  const bars = cols.map((c) => {
+    const isToday = c.d === today, future = c.d > today;
+    const extra = isToday && proj > c.total ? proj - c.total : 0;
+    const label = c.total || extra ? (extra ? `~${proj}` : c.total) : '';
+    const tip = future ? '' : `${WEEKDAYS[c.i]} ${parseDate(c.d).getDate()}: ${c.total} ml in ${c.n} ${c.n === 1 ? 'pasto' : 'pasti'}${extra ? `, previsti ~${proj} ml` : ''}`;
+    return `<button class="mcol ${isToday ? 'today' : ''} ${future ? 'future' : ''}" data-day="${c.d}" ${tip ? `title="${tip}" aria-label="${tip}"` : 'disabled'}>
+      <span class="mplot"><span class="mstack" style="height:${h(c.total + extra)}">
+        <span class="mval">${label}</span>
+        ${extra ? `<span class="mproj" style="flex:${extra}"></span>` : ''}
+        ${c.total ? `<span class="mdone" style="flex:${c.total}"></span>` : ''}
+      </span></span>
+      <span class="mday"><b>${WEEKDAYS[c.i]}</b> ${parseDate(c.d).getDate()}</span>
+    </button>`;
+  }).join('');
+  // 22px = altezza dell'etichetta del giorno (16px) + spazio (6px) sotto l'area del grafico alta 150px
+  const avgLine = avg ? `<span class="mavg" style="bottom:calc(22px + ${(avg / top * 150).toFixed(1)}px)"><span>media ${avg} ml</span></span>` : '';
+  $('#milk-chart').innerHTML = `<div class="mgrid">${avgLine}${bars}</div>`;
+  $('#milk-key').innerHTML = proj
+    ? `<i class="k-done"></i>bevuto <i class="k-proj"></i>previsione di oggi <i class="k-avg"></i>media dei giorni passati`
+    : avg ? `<i class="k-done"></i>bevuto <i class="k-avg"></i>media dei giorni passati` : 'Nessun pasto segnato in questa settimana.';
+}
+
 $('#week-prev').addEventListener('click', () => openWeek(addDays(state.week.start, -7)));
 $('#week-next').addEventListener('click', () => openWeek(addDays(state.week.start, 7)));
 $('#week-this').addEventListener('click', () => openWeek(mondayOf(isoDate(new Date()))));
+$('#milk-chart').addEventListener('click', (ev) => {
+  const r = ev.target.closest('[data-day]');
+  if (r && !r.disabled) { state.date = r.dataset.day; showView('day'); }
+});
 $('#week-chart').addEventListener('click', (ev) => {
   const r = ev.target.closest('[data-day]');
   if (r) { state.date = r.dataset.day; showView('day'); }

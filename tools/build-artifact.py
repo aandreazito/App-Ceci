@@ -5,7 +5,7 @@ root = pathlib.Path(__file__).resolve().parent.parent
 html = (root / 'index.html').read_text()
 css = (root / 'css/style.css').read_text()
 js = ''
-for f in ['icons.js', 'config.js', 'store.js', 'app.js']:
+for f in ['icons.js', 'predict.js', 'config.js', 'store.js', 'app.js']:
     src = (root / 'js' / f).read_text()
     src = re.sub(r'^import .*?;\n', '', src, flags=re.M)
     src = re.sub(r'^export (const|function|async function)', r'\1', src, flags=re.M)

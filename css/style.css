@@ -311,6 +311,52 @@ body:has(.tabbar:not(.hidden))::after {
 .readonly .add, .readonly .add-mark, .readonly .quick { display: none; }
 .readonly .entry, .readonly .mark { cursor: default; }
 
+/* ── previsione pasti ── */
+.forecast {
+  display: grid; gap: 12px; margin: 0 0 12px; padding: 12px 14px;
+  border-radius: 16px; background: var(--pasti-bg);
+}
+.forecast.empty { gap: 2px; }
+.forecast.empty span { font-size: .85rem; color: var(--muted); }
+.fc-row { display: grid; gap: 1px; }
+.fc-label { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.fc-big { font: 600 1.25rem/1.2 var(--f-display); color: var(--ink); }
+.fc-sub { font-size: .85rem; color: var(--ink); }
+.fc-sub small { color: var(--muted); font-size: .8rem; }
+.fc-bar { position: relative; height: 12px; margin-top: 8px; border-radius: 6px; background: var(--card); overflow: visible; }
+.fc-done, .fc-proj { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; }
+.fc-done { background: var(--pasti); }
+.fc-proj { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pasti) 55%, transparent) 0 4px, transparent 4px 8px); }
+.fc-avg { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+.fc-key { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: .72rem; color: var(--muted); margin: 6px 0 0; }
+.fc-key i { display: inline-block; width: 12px; height: 8px; border-radius: 2px; margin-left: 4px; }
+.fc-key i:first-child { margin-left: 0; }
+.k-done { background: var(--pasti); }
+.k-proj { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pasti) 55%, transparent) 0 3px, transparent 3px 6px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pasti) 55%, transparent); }
+.k-avg { width: 2px !important; height: 12px !important; background: var(--ink); }
+.fc-note { margin: 0; font-size: .7rem; color: var(--muted); }
+
+/* ── settimana: titoli delle schede e grafico del latte ── */
+.card-title { font-size: 1.1rem; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
+.milk-chart { --tone: var(--pasti); --tone-bg: var(--pasti-bg); }
+.mgrid { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding-top: 18px; }
+.mcol { display: grid; grid-template-rows: 150px auto; gap: 6px; background: none; border: 0; padding: 0; min-width: 0; }
+.mcol:disabled { cursor: default; }
+.mplot { position: relative; display: flex; align-items: flex-end; justify-content: center; border-bottom: 1.5px solid var(--line); }
+.mstack { position: relative; width: 70%; max-width: 34px; display: flex; flex-direction: column; gap: 2px; }
+.mdone { background: var(--pasti); border-radius: 4px 4px 0 0; min-height: 2px; }
+.mproj + .mdone { border-radius: 0; }
+.mproj { border-radius: 4px 4px 0 0; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pasti) 55%, transparent) 0 4px, transparent 4px 8px); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pasti) 55%, transparent); }
+.mval { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); padding-bottom: 3px; font-size: .68rem; font-weight: 800; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mday { height: 16px; line-height: 16px; font-size: .72rem; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mday b { color: var(--ink); }
+.mcol.today .mday b { color: var(--brand); }
+.mcol.future { opacity: .4; }
+/* la linea della media attraversa solo l'area del grafico (150px) */
+.mavg { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px dashed var(--ink); opacity: .55; z-index: 1; pointer-events: none;
+}
+.mavg span { position: absolute; right: 0; bottom: 2px; font-size: .65rem; font-weight: 800; color: var(--ink); background: var(--card); padding: 0 3px; border-radius: 4px; }
+
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
 }
