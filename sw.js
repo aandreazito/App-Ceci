@@ -1,5 +1,5 @@
 // Service worker: rende l'app installabile e utilizzabile anche offline.
-const CACHE = 'agenda-ceci-v1';
+const CACHE = 'agenda-ceci-v2';
 const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'js/store.js', 'js/config.js',
   'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 

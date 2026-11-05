@@ -1,24 +1,25 @@
 # 📒 Agenda di Ceci
 
-Un'agenda digitale per segnare ogni giorno cosa fa Cecilia — pappa, nanna,
-pannolini, attività, salute, umore e note — **condivisa in tempo reale tra
+Un'agenda digitale per segnare ogni giorno cosa fa Cecilia — pipì, cacca,
+pasti con il totale dei ml, e note — **condivisa in tempo reale tra
 Andrea e Alice**. È una web‑app che si installa sul telefono come un'app vera
 (icona nella schermata Home) e funziona anche senza connessione.
 
 ## Cosa si può fare
 
 - Una pagina per ogni giorno, con frecce ‹ › e calendario per spostarsi.
-- **＋ Aggiungi** in ogni sezione: l'ora viene già compilata con l'ora attuale.
+- **Pipì / Cacca**: ogni tocco su ＋ aggiunge una ✕ (con l'ora salvata).
+  Tocca una ✕ per vedere l'ora, correggerla o eliminarla.
+- **Pasti**: ＋ Aggiungi → ora (già compilata) e ml. In fondo il **TOT** dei ml.
 - Tocca una riga per modificarla o eliminarla.
-- Riepiloghi automatici: numero di pasti e ml totali, ore di nanna, cambi.
 - Ogni voce mostra chi l'ha inserita (il nome si imposta da ⚙️).
 - ⚙️ → *Scarica backup* per salvare tutti i dati in un file.
 
 ## Modificare le sezioni
 
 Tutta la struttura della pagina è in [`js/config.js`](js/config.js): si possono
-aggiungere, togliere o rinominare sezioni e campi (es. nuove opzioni per la
-pappa) senza toccare il resto del codice.
+aggiungere, togliere o rinominare sezioni e campi senza toccare il resto del
+codice. In fondo al file ci sono già pronte Nanna, Salute e Umore da attivare.
 
 ## 1. Pubblicare l'app (GitHub Pages, gratis)
 

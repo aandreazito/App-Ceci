@@ -110,7 +110,12 @@ function render() {
 
   $('#sections').innerHTML = SECTIONS.map((sec) => {
     let body = '';
-    if (sec.type === 'list') {
+    if (sec.type === 'tally') {
+      const items = itemsOf(sec);
+      body = `<div class="tally">${items.map((e) =>
+        `<button class="mark" data-edit="${sec.id}" data-id="${e.id}" title="${esc(e.ora || '')}${e.by ? ' · ' + esc(e.by) : ''}">✕</button>`).join('')}
+        <button class="mark add-mark" data-quick="${sec.id}" aria-label="Aggiungi ${esc(sec.title)}">＋</button></div>`;
+    } else if (sec.type === 'list') {
       const items = itemsOf(sec);
       body = items.length
         ? `<ul class="entries">${items.map((e) => entryRow(sec, e)).join('')}</ul>`
@@ -124,10 +129,11 @@ function render() {
       const val = focusedText === sec.id ? active.value : (state.day.fields[sec.id] || '');
       body = `<textarea data-text-section="${sec.id}" rows="3" placeholder="${esc(sec.placeholder || '')}">${esc(val)}</textarea>`;
     }
-    const sum = sec.summary && sec.type === 'list' ? `<span class="sum">${esc(sec.summary(itemsOf(sec)))}</span>` : '';
+    const n = sec.type === 'tally' ? `<span class="count">${itemsOf(sec).length}</span>` : '';
+    const total = sec.total ? `<p class="total">${esc(sec.total(itemsOf(sec)))}</p>` : '';
     return `<section class="card sec-${sec.id}">
-      <h2><span>${sec.icon}</span> ${esc(sec.title)} ${sum}</h2>
-      ${body}
+      <h2><span>${sec.icon}</span> ${esc(sec.title)} ${n}</h2>
+      ${body}${total}
     </section>`;
   }).join('');
 
@@ -153,7 +159,12 @@ function entryRow(sec, e) {
 $('#sections').addEventListener('click', (ev) => {
   const t = ev.target.closest('button');
   if (!t) return;
-  if (t.dataset.add) openEntry(t.dataset.add);
+  if (t.dataset.quick) {
+    const sec = SECTIONS.find((s) => s.id === t.dataset.quick);
+    const data = { section: sec.id };
+    for (const f of sec.fields) data[f.key] = f.now ? nowTime() : '';
+    store.addEntry(state.date, data, state.name || '').catch(saveError);
+  } else if (t.dataset.add) openEntry(t.dataset.add);
   else if (t.dataset.edit) openEntry(t.dataset.edit, t.dataset.id);
   else if (t.dataset.choice) {
     const cur = state.day.fields[t.dataset.choice];
@@ -198,7 +209,8 @@ function openEntry(sectionId, id) {
         `<option ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
     } else {
       input = `<input name="${f.key}" type="${f.type}" value="${esc(val)}" placeholder="${esc(f.placeholder || '')}"
-        ${f.type === 'number' ? 'inputmode="decimal" step="any" min="0"' : ''}>`;
+        ${f.type === 'number' ? 'inputmode="decimal" step="any" min="0"' : ''}
+        ${f.type === 'number' && !entry ? 'autofocus' : ''}>`;
     }
     return `<label>${esc(f.label)}${input}</label>`;
   }).join('');
