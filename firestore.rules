@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Chi può SCRIVERE (e leggere): sostituisci con le email degli account
+    // creati in Firebase → Authentication.
+    function puoScrivere() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'EMAIL_DI_ANDREA@esempio.it',
+          'EMAIL_DI_ALICE@esempio.it'
+        ];
+    }
+    // Chi può solo GUARDARE (es. i nonni). Lascia la lista vuota [] se non serve.
+    function puoLeggere() {
+      return puoScrivere() || (request.auth != null
+        && request.auth.token.email in [
+          'EMAIL_DEI_NONNI@esempio.it'
+        ]);
+    }
+    match /{document=**} {
+      allow read: if puoLeggere();
+      allow write: if puoScrivere();
+    }
+  }
+}

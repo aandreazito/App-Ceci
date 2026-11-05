@@ -1,0 +1,1199 @@
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700;800&display=swap">
+<title>Agenda di Ceci</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* L'agenda rosa di carta, digitale: pagina chiara, etichette evidenziate col
+   pennarello lilla, ✕ e totali "a matita", un colore tenue per ogni attività. */
+:root {
+  --paper: #fdf7f5;
+  --card: #ffffff;
+  --ink: #3a3242;
+  --muted: #877c8e;
+  --line: #f0e5e8;
+  --brand: #e27d92;        /* la copertina rosa dell'agenda */
+  --brand-soft: #fbe4e9;
+  --hl: #dcc8f7;           /* evidenziatore lilla */
+  --on-tone: #ffffff;
+  --danger: #c2413b;
+  --shadow: 0 1px 2px rgba(80, 40, 60, .05), 0 6px 18px rgba(80, 40, 60, .06);
+
+  --pipi: #3e93cf;     --pipi-bg: #e4f1fb;
+  --cacca: #a8723f;    --cacca-bg: #f5ebdf;
+  --pasti: #e07a48;    --pasti-bg: #fde9de;
+  --nap: #7476d9;      --nap-bg: #ebeafc;
+  --note: #c99512;     --note-bg: #fbf3d6;
+  --track: #f6eff1;
+
+  --f-display: "Fredoka", "Nunito", ui-rounded, system-ui, sans-serif;
+  --f-body: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+  --radius: 22px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1b1724; --card: #262033; --ink: #f2ecf7; --muted: #a99db5; --line: #362f45;
+    --brand: #f19bb0; --brand-soft: #46283a; --hl: #57407d; --on-tone: #1b1724; --danger: #ff8a80;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+    --pipi: #7fc1ef; --pipi-bg: #1d3245; --cacca: #d9a878; --cacca-bg: #3a2e24;
+    --pasti: #f5a47c; --pasti-bg: #43291f; --nap: #a6a8f7; --nap-bg: #2c2a55;
+    --note: #ecc458; --note-bg: #3b331b; --track: #2f2940;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1b1724; --card: #262033; --ink: #f2ecf7; --muted: #a99db5; --line: #362f45;
+  --brand: #f19bb0; --brand-soft: #46283a; --hl: #57407d; --on-tone: #1b1724; --danger: #ff8a80;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  --pipi: #7fc1ef; --pipi-bg: #1d3245; --cacca: #d9a878; --cacca-bg: #3a2e24;
+  --pasti: #f5a47c; --pasti-bg: #43291f; --nap: #a6a8f7; --nap-bg: #2c2a55;
+  --note: #ecc458; --note-bg: #3b331b; --track: #2f2940;
+  color-scheme: dark;
+}
+
+.tone-pipi { --tone: var(--pipi); --tone-bg: var(--pipi-bg); }
+.tone-cacca { --tone: var(--cacca); --tone-bg: var(--cacca-bg); }
+.tone-pasti { --tone: var(--pasti); --tone-bg: var(--pasti-bg); }
+.tone-pisolini { --tone: var(--nap); --tone-bg: var(--nap-bg); }
+.tone-note { --tone: var(--note); --tone-bg: var(--note-bg); }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font: 16px/1.45 var(--f-body);
+  background: var(--paper); color: var(--ink);
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  -webkit-tap-highlight-color: transparent;
+}
+.hidden { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--hl); outline-offset: 2px; }
+input, select, textarea {
+  font: inherit; color: var(--ink); background: var(--paper);
+  border: 1.5px solid var(--line); border-radius: 14px; padding: 11px 13px; width: 100%;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--tone, var(--brand)); }
+svg { flex: none; }
+.ic { width: 22px; height: 22px; }
+.eyebrow {
+  display: block; font: 700 .7rem/1.2 var(--f-body); text-transform: uppercase;
+  letter-spacing: .09em; color: var(--muted);
+}
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; text-wrap: balance; }
+
+/* ── intestazione ── */
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 40px; height: 40px; border-radius: 14px; background: var(--brand); display: grid; place-items: center;
+}
+.brand-mark svg { width: 22px; height: 22px; fill: var(--paper); }
+.topbar h1 { font-size: 1.45rem; margin: 0; line-height: 1.1; }
+.icon-btn {
+  background: none; border: 0; padding: 0; width: 42px; height: 42px;
+  display: grid; place-items: center; border-radius: 50%; color: var(--ink);
+}
+.icon-btn.round { background: var(--card); box-shadow: var(--shadow); }
+.icon-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn:active { transform: scale(.94); }
+
+main, #login, #week { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+/* ── navigazione data ── */
+.datenav { display: flex; align-items: center; gap: 10px; margin: 8px 0 12px; }
+.date-label { flex: 1; position: relative; text-align: center; display: grid; gap: 1px; }
+.date-label > span { font: 600 1.2rem/1.2 var(--f-display); }
+.date-label input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+#date-eyebrow { color: var(--brand); }
+.chip {
+  display: block; margin: -4px auto 12px; padding: 5px 12px; border-radius: 999px;
+  background: var(--brand-soft); color: var(--ink); font-size: .82rem; font-weight: 700; border: 0;
+}
+
+/* ── riquadri riassuntivi ── */
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.tile {
+  display: grid; justify-items: start; gap: 2px; padding: 10px 10px 9px; border: 0; text-align: left;
+  border-radius: 18px; background: var(--tone-bg); color: var(--ink); min-width: 0;
+}
+.tile .ic { color: var(--tone); width: 20px; height: 20px; margin-bottom: 2px; }
+.tile b { font: 600 1.25rem/1.1 var(--f-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tile b small { font-size: .7rem; margin-left: 2px; font-family: var(--f-body); font-weight: 700; }
+.tile span { font-size: .72rem; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* ── schede ── */
+.card {
+  background: var(--card); border-radius: var(--radius); padding: 16px;
+  margin-bottom: 14px; box-shadow: var(--shadow);
+}
+.sec { scroll-margin-top: 90px; }
+.sec h2 { font-size: 1.15rem; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
+.badge {
+  width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--tone-bg, var(--brand-soft)); color: var(--tone, var(--brand));
+}
+.badge .ic { width: 21px; height: 21px; }
+/* la parola evidenziata come sul quaderno */
+.hl {
+  padding: 0 .25em; margin-left: -.1em;
+  background: linear-gradient(transparent 52%, var(--hl) 52%, var(--hl) 90%, transparent 90%);
+  border-radius: 3px;
+}
+.count {
+  margin-left: auto; min-width: 2.1rem; text-align: center;
+  background: var(--tone-bg); color: var(--tone); border-radius: 999px; padding: 2px 10px;
+  font: 600 1rem/1.4 var(--f-display); font-variant-numeric: tabular-nums;
+}
+
+/* ── crocette ── */
+.tally { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.mark {
+  display: grid; justify-items: center; width: 46px; padding: 0 0 2px; border: 0; background: none;
+  font: 700 2.2rem/1 var(--f-hand); color: var(--ink);
+}
+.mark small { font: 600 .66rem/1 var(--f-body); color: var(--muted); font-variant-numeric: tabular-nums; }
+.add-mark {
+  width: 46px; height: 46px; border-radius: 50%; border: 0; display: grid; place-items: center;
+  background: var(--tone); color: var(--on-tone);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--tone) 35%, transparent);
+}
+.add-mark .ic { width: 22px; height: 22px; stroke-width: 2.4; }
+.add-mark:active, .quick:active, .add:active { transform: scale(.96); }
+
+/* ── righe ── */
+.entries { list-style: none; margin: 0; padding: 0; }
+.entry {
+  width: 100%; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: baseline;
+  text-align: left; background: none; border: 0; border-bottom: 1.5px dashed var(--line); padding: 10px 2px;
+}
+.entries li:last-child .entry { border-bottom: 0; }
+.entry .time { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 3.1em; }
+.entry .desc { overflow-wrap: anywhere; min-width: 0; }
+.entry .desc b { color: var(--tone); font-weight: 800; }
+.entry .by { font-size: .72rem; color: var(--muted); }
+.empty { color: var(--muted); margin: 2px 0 6px; font-size: .9rem; }
+.add {
+  width: 100%; margin-top: 8px; padding: 10px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1.5px dashed color-mix(in srgb, var(--tone) 60%, transparent); background: none; color: var(--tone); font-weight: 800;
+}
+.add .ic { width: 18px; height: 18px; stroke-width: 2.4; }
+.quick {
+  width: 100%; margin-top: 10px; padding: 13px; border-radius: 16px; border: 0;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--tone); color: var(--on-tone); font-weight: 800; font-size: 1rem;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--tone) 35%, transparent);
+}
+.quick.wake { background: var(--note); box-shadow: 0 4px 14px color-mix(in srgb, var(--note) 35%, transparent); }
+.total {
+  text-align: right; margin: 8px 2px 0;
+  font: 700 1.75rem/1 var(--f-hand); color: var(--ink);
+}
+
+/* ── note: righe da quaderno ── */
+textarea {
+  resize: vertical; min-height: 112px; border-radius: 14px;
+  line-height: 28px; padding: 6px 13px;
+  background: var(--paper) repeating-linear-gradient(transparent 0 27px, var(--line) 27px 28px) 0 6px / 100% 28px local;
+}
+
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice { border: 1.5px solid var(--line); background: var(--paper); padding: 7px 12px; border-radius: 999px; }
+.choice.on { background: var(--tone, var(--brand)); border-color: transparent; color: var(--on-tone); }
+
+/* ── linea del tempo ── */
+.timeline { margin: 2px 0 12px; }
+.track { position: relative; height: 28px; background: var(--track); border-radius: 10px; overflow: hidden; }
+.gridline { position: absolute; top: 6px; bottom: 6px; width: 1px; background: var(--line); }
+.nap { position: absolute; top: 3px; bottom: 3px; background: var(--nap); border-radius: 8px; }
+.nap.ongoing { background: repeating-linear-gradient(45deg, var(--nap) 0 5px, var(--nap-bg) 5px 9px); }
+.now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--brand); border-radius: 2px; }
+.ticks { position: relative; height: 18px; font-size: .68rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tick { position: absolute; transform: translateX(-50%); top: 3px; }
+.tick:first-child { transform: none; }
+.tick:last-child { transform: translateX(-100%); }
+
+.status { text-align: center; color: var(--muted); font-size: .85rem; min-height: 1em; }
+.error { color: var(--danger); }
+
+/* ── finestre ── */
+dialog {
+  border: 0; border-radius: 26px; padding: 20px; width: min(92vw, 440px);
+  background: var(--card); color: var(--ink); box-shadow: 0 20px 60px rgba(40, 20, 40, .25);
+}
+dialog::backdrop { background: rgba(40, 25, 45, .4); backdrop-filter: blur(2px); }
+dialog h3 { margin: 0 0 14px; display: flex; align-items: center; gap: 10px; font-size: 1.2rem; }
+label { display: block; margin-bottom: 12px; font-size: .85rem; font-weight: 700; color: var(--muted); }
+label > input, label > select { margin-top: 5px; font-weight: 400; }
+.row { display: flex; gap: 8px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.stack { display: grid; gap: 8px; }
+.row button, .stack button, .login button {
+  padding: 11px 16px; border-radius: 14px; border: 0; background: var(--paper); font-weight: 700;
+}
+button.primary { background: var(--tone, var(--brand)); color: var(--on-tone); }
+button.danger { color: var(--danger); background: none; padding-left: 4px; }
+button.link { background: none; color: var(--muted); text-decoration: underline; font-weight: 600; }
+.hint { font-size: .82rem; color: var(--muted); margin: 6px 0 0; }
+
+.login { margin-top: 48px; text-align: center; display: grid; gap: 4px; }
+.login label { text-align: left; }
+.login .big { margin: 0 auto 4px; width: 56px; height: 56px; border-radius: 18px; background: var(--brand); display: grid; place-items: center; }
+.login .big svg { width: 30px; height: 30px; fill: var(--paper); }
+
+/* ── barra in basso ── */
+.tabbar {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 6;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex; gap: 4px; padding: 5px;
+  background: var(--card); border-radius: 999px; box-shadow: 0 8px 28px rgba(60, 30, 60, .16);
+}
+.tabbar button {
+  display: flex; align-items: center; gap: 7px; background: none; border: 0;
+  padding: 10px 18px; border-radius: 999px; font-weight: 800; font-size: .9rem; color: var(--muted);
+}
+.tabbar svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tabbar button[aria-current="page"] { background: var(--brand); color: var(--on-tone); }
+
+/* ── settimana ── */
+#week-this { margin-top: -4px; }
+.week-head { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; }
+.week-chart { display: grid; gap: 4px; --tone: var(--nap); --tone-bg: var(--nap-bg); }
+.wrow {
+  display: grid; grid-template-columns: 3rem minmax(0, 1fr) 3.9rem; gap: 8px; align-items: center;
+  background: none; border: 0; padding: 2px 0; text-align: left; border-radius: 10px;
+}
+.wrow .timeline { margin: 0; }
+.wrow .track { height: 24px; }
+.wrow.today .wday b { color: var(--brand); }
+.wrow.today .track { box-shadow: inset 0 0 0 2px var(--brand-soft); }
+.wrow.future { opacity: .4; }
+.wrow.axis { padding: 0; cursor: default; }
+.wday { font-size: .82rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.wday b { color: var(--ink); font-weight: 800; }
+.wtot { font-size: .82rem; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; display: grid; line-height: 1.15; }
+.wtot small { font-weight: 600; color: var(--muted); font-size: .68rem; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stats .empty { grid-column: 1 / -1; text-align: center; }
+.stat { background: var(--nap-bg); border-radius: 18px; padding: 12px 14px; display: grid; gap: 1px; }
+.stat span { font-size: .78rem; font-weight: 700; color: var(--muted); }
+.stat b { font: 600 1.55rem/1.15 var(--f-display); font-variant-numeric: tabular-nums; color: var(--ink); }
+.stat small { font-size: .7rem; color: var(--muted); }
+.typical-card:empty { display: none; }
+.typical-card h3 { margin: 0 0 4px; font-size: 1.1rem; }
+.typical { list-style: none; margin: 0; padding: 0; }
+.typical li { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; padding: 10px 0; border-bottom: 1.5px dashed var(--line); }
+.typical li:last-child { border-bottom: 0; }
+.typical .nth { font: 700 1.35rem/1.1 var(--f-hand); color: var(--nap); grid-row: span 2; align-self: center; }
+.typical small { grid-column: 2; color: var(--muted); font-size: .74rem; }
+
+/* ── solo lettura (es. i nonni) ── */
+.readonly-note {
+  margin: -4px 0 12px; padding: 10px 14px; border-radius: 14px;
+  background: var(--brand-soft); font-size: .85rem; font-weight: 600; text-align: center;
+}
+.readonly .add, .readonly .add-mark, .readonly .quick { display: none; }
+.readonly .entry, .readonly .mark { cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; }
+}
+@media (max-width: 370px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* dentro claude.ai: barra fissa sotto l'area di sistema */
+.topbar { top: env(safe-area-inset-top, 0px); padding-top: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+main, #login, #week { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+</style>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20.5c-5-3.3-8-6.2-8-9.6A4.3 4.3 0 0 1 12 8.6a4.3 4.3 0 0 1 8 2.3c0 3.4-3 6.3-8 9.6z"/></svg></span>
+      <div><small class="eyebrow">L'agenda di</small><h1 id="title">Cecilia</h1></div>
+    </div>
+    <button id="btn-settings" class="icon-btn round" aria-label="Impostazioni"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg></button>
+  </header>
+
+  <!-- Login (solo in modalità condivisa) -->
+  <section id="login" class="hidden">
+    <form id="login-form" class="card login">
+      <p class="big" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20.5c-5-3.3-8-6.2-8-9.6A4.3 4.3 0 0 1 12 8.6a4.3 4.3 0 0 1 8 2.3c0 3.4-3 6.3-8 9.6z"/></svg></p>
+      <h2>Accedi all'agenda</h2>
+      <label>Email<input type="email" name="email" autocomplete="username" required></label>
+      <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+      <p id="login-error" class="error"></p>
+      <button class="primary" type="submit">Entra</button>
+      <button type="button" id="btn-reset" class="link">Password dimenticata?</button>
+    </form>
+  </section>
+
+  <main id="main" class="hidden">
+    <nav class="datenav">
+      <button id="prev" class="icon-btn round" aria-label="Giorno precedente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+      <label class="date-label">
+        <small class="eyebrow" id="date-eyebrow">Oggi</small>
+        <span id="date-text"></span>
+        <input type="date" id="date-input" aria-label="Scegli il giorno">
+      </label>
+      <button id="next" class="icon-btn round" aria-label="Giorno successivo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
+    </nav>
+    <button id="today" class="chip hidden">Torna a oggi</button>
+    <p id="readonly-note" class="readonly-note hidden">Stai guardando l'agenda: solo chi l'ha creata e chi ha il permesso di modificarla può aggiungere voci.</p>
+    <div id="today-stats" class="tiles"></div>
+    <div id="sections"></div>
+    <p id="status" class="status"></p>
+  </main>
+
+  <section id="week" class="hidden">
+    <nav class="datenav">
+      <button id="week-prev" class="icon-btn round" aria-label="Settimana precedente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+      <div class="date-label"><small class="eyebrow">Pisolini della settimana</small><span id="week-text"></span></div>
+      <button id="week-next" class="icon-btn round" aria-label="Settimana successiva"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
+    </nav>
+    <button id="week-this" class="chip hidden">Torna a questa settimana</button>
+    <div class="card">
+      <div id="week-chart" class="week-chart"></div>
+      <p class="hint">Tocca un giorno per aprirlo.</p>
+    </div>
+    <div id="week-stats" class="stats"></div>
+    <div id="week-typical" class="card typical-card"></div>
+  </section>
+
+  <nav class="tabbar hidden" aria-label="Sezioni">
+    <button data-view="day" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2z"/><path d="M6 18a2 2 0 0 1 2-2h11"/><path d="M10 8h5"/></svg>Giorno</button>
+    <button data-view="week"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M4 12h15M4 18h7" stroke-width="3"/></svg>Settimana</button>
+  </nav>
+
+  <dialog id="entry-dialog">
+    <form method="dialog" id="entry-form">
+      <h3 id="entry-title"></h3>
+      <div id="entry-fields"></div>
+      <div class="row">
+        <button type="button" id="entry-delete" class="danger">Elimina</button>
+        <span class="spacer"></span>
+        <button type="button" id="entry-cancel">Annulla</button>
+        <button type="submit" class="primary">Salva</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" id="settings-form">
+      <h3>Impostazioni</h3>
+      <label>Il tuo nome<input name="name" id="set-name" placeholder="es. Andrea"></label>
+      <p class="hint" id="mode-info"></p>
+      <div class="stack">
+        <button type="button" id="btn-export">⬇️ Scarica backup (JSON)</button>
+        <button type="button" id="btn-logout" class="hidden">Esci</button>
+      </div>
+      <div class="row">
+        <span class="spacer"></span>
+        <button type="submit" class="primary">Fatto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module">
+// ── icons.js ──
+// Icone disegnate a mano (stile tratto arrotondato), colorate con currentColor.
+const P = {
+  pipi: '<path d="M12 3.5s6 6.4 6 10.8a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5z"/><path d="M9.5 14.5a2.6 2.6 0 0 0 2.2 2.4"/>',
+  cacca: '<path d="M6 19.5h12a2.5 2.5 0 0 0 0-5H6a2.5 2.5 0 0 0 0 5z"/><path d="M7.5 14.5a2.3 2.3 0 0 1 0-4.6h9a2.3 2.3 0 0 1 0 4.6"/><path d="M9.5 9.9a2.6 2.6 0 0 1 2.6-2.6c1.4 0 1.9-1.2 1.4-2.8 2 .5 3 2.2 2.2 5.4"/>',
+  pasti: '<path d="M9.5 3h5v3h-5z"/><path d="M8.5 6h7l1.5 3.5V19a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9.5z"/><path d="M7 12.5h4M7 16h3"/>',
+  pisolini: '<path d="M19.5 14.6A7.8 7.8 0 1 1 9.4 4.5a6.2 6.2 0 0 0 10.1 10.1z"/><path d="M15 4h3l-3 3.5h3"/>',
+  note: '<path d="M4.5 19.5h4l10-10a2.8 2.8 0 0 0-4-4l-10 10z"/><path d="M13.5 6.5l4 4"/>',
+  salute: '<rect x="3.5" y="8" width="17" height="8" rx="4" transform="rotate(-45 12 12)"/><path d="M9.2 9.2l5.6 5.6"/>',
+  umore: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14a4.5 4.5 0 0 0 7 0"/><path d="M9 10h.01M15 10h.01"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+};
+const icon = (name, cls = 'ic') =>
+  `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || P.note}</svg>`;
+
+// ── config.js ──
+// ─────────────────────────────────────────────────────────────
+//  CONFIGURAZIONE DELL'AGENDA DI CECILIA
+// ─────────────────────────────────────────────────────────────
+
+const BABY_NAME = 'Cecilia';
+
+// 1) Per condividere i dati con Alice incolla qui la configurazione
+//    del tuo progetto Firebase (vedi README.md, "Condivisione").
+//    Finché resta `null` l'app funziona solo su questo dispositivo.
+const FIREBASE_CONFIG = null;
+/* Esempio:
+const FIREBASE_CONFIG = {
+  apiKey: "AIza...",
+  authDomain: "agenda-ceci.firebaseapp.com",
+  projectId: "agenda-ceci",
+  storageBucket: "agenda-ceci.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef",
+};
+*/
+
+// 2) Le sezioni della pagina giornaliera.
+//    type: 'tally'  → contatore a crocette ✕ (es. pipì)
+//          'list'   → righe ripetibili (es. ogni pasto)
+//          'choice' → una scelta tra opzioni
+//          'text'   → testo libero
+//    Tipi di campo: time, text, number, select
+const minutes = (t) => {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const duration = (a, b) => {
+  const x = minutes(a), y = minutes(b);
+  if (x == null || y == null) return 0;
+  return y >= x ? y - x : y + 1440 - x;
+};
+const fmtDuration = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m` : `${m}m`);
+
+const SECTIONS = [
+  {
+    id: 'pipi',
+    title: 'Pipì',
+    icon: 'pipi',
+    type: 'tally', // ogni tocco su "＋" aggiunge una ✕ (con l'ora)
+    fields: [{ key: 'ora', label: 'Ora', type: 'time', now: true }],
+    stat: (items) => ({ value: items.length, label: 'pipì' }),
+  },
+  {
+    id: 'cacca',
+    title: 'Cacca',
+    icon: 'cacca',
+    type: 'tally',
+    fields: [{ key: 'ora', label: 'Ora', type: 'time', now: true }],
+    stat: (items) => ({ value: items.length, label: 'cacca' }),
+  },
+  {
+    id: 'pasti',
+    title: 'Pasti',
+    icon: 'pasti',
+    type: 'list',
+    fields: [
+      { key: 'ora', label: 'Ora', type: 'time', now: true },
+      { key: 'ml', label: 'Quantità (ml)', type: 'number', step: 10 },
+    ],
+    total: (items) => `TOT: ${items.reduce((s, i) => s + (Number(i.ml) || 0), 0)} ml`,
+    stat: (items) => ({
+      value: items.reduce((s, i) => s + (Number(i.ml) || 0), 0), unit: 'ml',
+      label: `${items.length} ${items.length === 1 ? 'pasto' : 'pasti'}`,
+    }),
+  },
+  {
+    id: 'pisolini',
+    title: 'Pisolini',
+    icon: 'pisolini',
+    type: 'list',
+    fields: [
+      { key: 'inizio', label: 'Si è addormentata alle', type: 'time', now: true },
+      { key: 'fine', label: 'Si è svegliata alle', type: 'time' },
+      { key: 'note', label: 'Note', type: 'text', placeholder: 'es. in carrozzina, in braccio…' },
+    ],
+    // pulsante rapido: "Si è addormentata ora" → poi "Si è svegliata ora"
+    quick: { from: 'inizio', to: 'fine', startLabel: 'Si è addormentata ora', endLabel: 'Si è svegliata ora' },
+    // linea del tempo della giornata (dalle 6 alle 22)
+    timeline: { from: 'inizio', to: 'fine', start: 6, end: 22 },
+    detail: (e) => (e.fine ? fmtDuration(duration(e.inizio, e.fine)) : 'sta dormendo…'),
+    total: (items) => {
+      const tot = items.reduce((s, i) => s + (i.fine ? duration(i.inizio, i.fine) : 0), 0);
+      return `TOT: ${fmtDuration(tot)}`;
+    },
+    stat: (items) => ({
+      value: fmtDuration(items.reduce((s, i) => s + (i.fine ? duration(i.inizio, i.fine) : 0), 0)),
+      label: `${items.length} ${items.length === 1 ? 'pisolino' : 'pisolini'}`,
+    }),
+  },
+  {
+    id: 'note',
+    title: 'Note',
+    icon: 'note',
+    type: 'text',
+    placeholder: 'Cose da dire all\'altra, da ricordare, da comprare…',
+  },
+];
+
+/* Altre sezioni pronte da aggiungere all'elenco sopra, se servono:
+
+  { id: 'salute', title: 'Salute e medicine', icon: 'salute', type: 'list',
+    fields: [
+      { key: 'ora', label: 'Ora', type: 'time', now: true },
+      { key: 'cosa', label: 'Cosa', type: 'text', placeholder: 'es. Tachipirina, febbre 37.8°' },
+    ] },
+
+  { id: 'umore', title: 'Umore', icon: 'umore', type: 'choice',
+    options: ['😄 Felice', '🙂 Tranquilla', '😢 Nervosa', '🤒 Malaticcia'] },
+*/
+
+// ── store.js ──
+// Archivio dati: locale (solo questo dispositivo) oppure Firebase (condiviso).
+// Forma di un giorno: { fields: {sezione: valore}, entries: [{id, section, ...}] }
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+// ───────────────────────── Locale ─────────────────────────
+function createLocalStore() {
+  const KEY = 'ceci-agenda-v1';
+  const subs = new Map(); // date -> Set(cb)
+  const load = () => {
+    try { return JSON.parse(localStorage.getItem(KEY)) || { days: {} }; }
+    catch { return { days: {} }; }
+  };
+  let data = load();
+  const day = (d) => (data.days[d] ||= { fields: {}, entries: {} });
+  const snapshot = (d) => {
+    const x = data.days[d] || { fields: {}, entries: {} };
+    return { fields: { ...x.fields }, entries: Object.entries(x.entries).map(([id, e]) => ({ id, ...e })) };
+  };
+  const emit = (d) => subs.get(d)?.forEach((cb) => cb(snapshot(d)));
+  const save = (d) => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} emit(d); };
+  window.addEventListener('storage', (e) => {
+    if (e.key !== KEY) return;
+    data = load();
+    subs.forEach((_, d) => emit(d));
+  });
+
+  return {
+    shared: false,
+    async init(onUser) { onUser({ email: null }); },
+    async signIn() {},
+    async signOut() {},
+    subscribeDay(d, cb) {
+      if (!subs.has(d)) subs.set(d, new Set());
+      subs.get(d).add(cb);
+      cb(snapshot(d));
+      return () => subs.get(d).delete(cb);
+    },
+    async addEntry(d, entry, by) { day(d).entries[uid()] = { ...entry, by, createdAt: Date.now() }; save(d); },
+    async updateEntry(d, id, entry, by) { Object.assign(day(d).entries[id], entry, { by }); save(d); },
+    async deleteEntry(d, id) { delete day(d).entries[id]; save(d); },
+    async setField(d, key, value) { day(d).fields[key] = value; save(d); },
+    async exportAll() { return data; },
+  };
+}
+
+// ───────────────────────── Firebase ─────────────────────────
+const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
+
+async function createFirebaseStore(config) {
+  const { initializeApp } = await import(FB + 'firebase-app.js');
+  const auth$ = await import(FB + 'firebase-auth.js');
+  const fs = await import(FB + 'firebase-firestore.js');
+
+  const app = initializeApp(config);
+  const auth = auth$.getAuth(app);
+  await auth$.setPersistence(auth, auth$.browserLocalPersistence);
+  let db;
+  try {
+    db = fs.initializeFirestore(app, {
+      localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }),
+    });
+  } catch {
+    db = fs.getFirestore(app);
+  }
+
+  const dayDoc = (d) => fs.doc(db, 'days', d);
+  const entriesCol = (d) => fs.collection(db, 'days', d, 'entries');
+
+  return {
+    shared: true,
+    init(onUser) {
+      auth$.onAuthStateChanged(auth, (u) => onUser(u ? { email: u.email } : null));
+    },
+    async signIn(email, password) {
+      await auth$.signInWithEmailAndPassword(auth, email, password);
+    },
+    async resetPassword(email) {
+      await auth$.sendPasswordResetEmail(auth, email);
+    },
+    async signOut() { await auth$.signOut(auth); },
+    subscribeDay(d, cb, onError) {
+      let fields = {}, entries = [];
+      const push = () => cb({ fields, entries });
+      const u1 = fs.onSnapshot(dayDoc(d), (s) => { fields = s.data()?.fields || {}; push(); }, onError);
+      const u2 = fs.onSnapshot(entriesCol(d), (s) => {
+        entries = s.docs.map((x) => ({ id: x.id, ...x.data() }));
+        push();
+      }, onError);
+      return () => { u1(); u2(); };
+    },
+    async addEntry(d, entry, by) {
+      await fs.setDoc(dayDoc(d), { updatedAt: fs.serverTimestamp() }, { merge: true });
+      await fs.addDoc(entriesCol(d), { ...entry, by, createdAt: Date.now() });
+    },
+    async updateEntry(d, id, entry, by) {
+      await fs.updateDoc(fs.doc(db, 'days', d, 'entries', id), { ...entry, by });
+    },
+    async deleteEntry(d, id) {
+      await fs.deleteDoc(fs.doc(db, 'days', d, 'entries', id));
+    },
+    async setField(d, key, value) {
+      await fs.setDoc(dayDoc(d), { fields: { [key]: value }, updatedAt: fs.serverTimestamp() }, { merge: true });
+    },
+    async exportAll() {
+      const out = { days: {} };
+      const days = await fs.getDocs(fs.collection(db, 'days'));
+      for (const dd of days.docs) {
+        const ents = await fs.getDocs(entriesCol(dd.id));
+        out.days[dd.id] = {
+          fields: dd.data().fields || {},
+          entries: Object.fromEntries(ents.docs.map((e) => [e.id, e.data()])),
+        };
+      }
+      return out;
+    },
+  };
+}
+
+// ───────────────────── Artifact su claude.ai (condiviso) ─────────────────────
+// Usato quando l'app è aperta come Artifact dentro Claude: i dati stanno
+// nell'archivio condiviso dell'artifact, visibile a chi ha il link.
+async function createClaudeStore() {
+  const db = await window.claude.use('db');
+  if (!db) return null;
+  const user = await window.claude.use('user');
+  const downloads = await window.claude.use('downloads');
+  const myId = (await user?.id()) || '';
+  // chi ha solo il permesso di guardare (es. i nonni) non può scrivere
+  const readOnly = (await user?.can?.('data.write')) === false;
+  const entries = db.collection('entries');
+  const notes = db.collection('days');
+
+  return {
+    shared: true,
+    readOnly,
+    canDownload: !!downloads,
+    async init(onUser) { onUser({ email: null, id: myId }); },
+    async signIn() {},
+    async signOut() {},
+    subscribeDay(d, cb, onError) {
+      let fields = {}, list = [];
+      const push = () => cb({ fields, entries: list });
+      const u1 = notes.doc(d).onSnapshot((s) => { fields = s.data()?.fields || {}; push(); }, onError);
+      const u2 = entries.where('date', '==', d).onSnapshot((s) => {
+        list = s.docs.map((x) => ({ id: x.id, ...x.data() }));
+        push();
+      }, onError);
+      return () => { u1(); u2(); };
+    },
+    async addEntry(d, entry, by) {
+      await entries.add({ ...entry, date: d, by, byId: myId, createdAt: Date.now() });
+    },
+    async updateEntry(d, id, entry, by) {
+      await entries.doc(id).update({ ...entry, by, byId: myId });
+    },
+    async deleteEntry(d, id) { await entries.doc(id).delete(); },
+    async setField(d, key, value) {
+      const cur = (await notes.doc(d).get()).data()?.fields || {};
+      await notes.doc(d).set({ date: d, fields: { ...cur, [key]: value } });
+    },
+    async names(ids) {
+      if (!user || !ids.length) return {};
+      const ps = await user.profiles(ids);
+      return Object.fromEntries(ids.map((i) => [i, ps[i]?.name || '']));
+    },
+    async exportAll() {
+      const out = { days: {} };
+      for (const s of (await notes.get()).docs) (out.days[s.id] ||= { fields: {}, entries: {} }).fields = s.data().fields || {};
+      for (const s of (await entries.get()).docs) {
+        const e = s.data();
+        (out.days[e.date] ||= { fields: {}, entries: {} }).entries[s.id] = e;
+      }
+      return out;
+    },
+    async download(filename, data) { await downloads.save({ filename, data }); },
+  };
+}
+
+// ── app.js ──
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = (n) => String(n).padStart(2, '0');
+const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const nowTime = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const parseDate = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+
+const state = {
+  date: isoDate(new Date()),
+  day: { fields: {}, entries: [] },
+  unsub: null,
+  name: (() => { try { return localStorage.getItem('ceci-name') || ''; } catch { return ''; } })(),
+  editing: null, // {section, id}
+  view: 'day', // 'day' | 'week'
+  week: { start: null, days: {}, unsubs: [] },
+  names: {}, // id persona → nome (solo su claude.ai)
+};
+
+let store;
+const status = (msg, isError = false) => {
+  const el = $('#status');
+  el.textContent = msg;
+  el.classList.toggle('error', isError);
+};
+
+// ───────────────────────── Avvio ─────────────────────────
+async function start() {
+  $('#title').textContent = BABY_NAME;
+  document.title = `Agenda di ${BABY_NAME}`;
+  try {
+    if (typeof window.claude?.use === 'function') {
+      store = await createClaudeStore();
+      if (!store) status('Accedi a Claude per vedere l\'agenda condivisa. Intanto i dati restano su questo dispositivo.', true);
+    }
+    store ||= FIREBASE_CONFIG ? await createFirebaseStore(FIREBASE_CONFIG) : createLocalStore();
+  } catch (e) {
+    console.error(e);
+    store = createLocalStore();
+    status('Impossibile collegarsi al server: uso i dati di questo dispositivo.', true);
+  }
+  store.init((user) => {
+    if (!user) {
+      $('#login').classList.remove('hidden');
+      $('#main').classList.add('hidden');
+      $('#week').classList.add('hidden');
+      $('.tabbar').classList.add('hidden');
+      return;
+    }
+    state.user = user;
+    setReadOnly(!!store.readOnly);
+    if (!state.name && user.email) state.name = user.email.split('@')[0];
+    $('#login').classList.add('hidden');
+    $('.tabbar').classList.remove('hidden');
+    showView(state.view);
+  });
+  
+}
+
+// ───────────────────────── Login ─────────────────────────
+$('#login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  $('#login-error').textContent = '';
+  try {
+    await store.signIn(f.get('email').trim(), f.get('password'));
+  } catch (err) {
+    $('#login-error').textContent = 'Email o password non corrette.';
+    console.error(err);
+  }
+});
+$('#btn-reset').addEventListener('click', async () => {
+  const email = $('#login-form').email.value.trim();
+  if (!email) { $('#login-error').textContent = 'Scrivi prima la tua email.'; return; }
+  try { await store.resetPassword(email); $('#login-error').textContent = 'Ti ho mandato una email per reimpostare la password.'; }
+  catch { $('#login-error').textContent = 'Non è stato possibile inviare l\'email.'; }
+});
+
+// ───────────────────────── Giorno ─────────────────────────
+function openDay(date) {
+  state.date = date;
+  state.unsub?.();
+  const d = parseDate(date);
+  const diff = Math.round((d - parseDate(isoDate(new Date()))) / 864e5);
+  const rel = { 0: 'Oggi', [-1]: 'Ieri', 1: 'Domani' }[diff];
+  $('#date-eyebrow').textContent = rel || d.toLocaleDateString('it-IT', { weekday: 'long' });
+  $('#date-text').textContent = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+  $('#date-input').value = date;
+  $('#today').classList.toggle('hidden', date === isoDate(new Date()));
+  state.unsub = store.subscribeDay(date, async (day) => {
+    state.day = day;
+    status('');
+    render();
+    if (store.names) {
+      const ids = [...new Set(day.entries.map((e) => e.byId).filter((i) => i && !(i in state.names)))];
+      if (ids.length) { Object.assign(state.names, await store.names(ids)); render(); }
+    }
+  }, (err) => {
+    console.error(err);
+    status(err.code === 'permission-denied'
+      ? 'Questo account non è autorizzato a vedere l\'agenda.'
+      : 'Errore di collegamento: ' + err.message, true);
+  });
+}
+
+const shift = (n) => { const d = parseDate(state.date); d.setDate(d.getDate() + n); openDay(isoDate(d)); };
+$('#prev').addEventListener('click', () => shift(-1));
+$('#next').addEventListener('click', () => shift(1));
+$('#today').addEventListener('click', () => openDay(isoDate(new Date())));
+$('#date-input').addEventListener('change', (e) => e.target.value && openDay(e.target.value));
+
+// ───────────────────────── Rendering ─────────────────────────
+const sortKey = (sec, e) => {
+  const t = sec.fields.find((f) => f.type === 'time');
+  return (t && e[t.key]) || '99:99';
+};
+const itemsOf = (sec) => state.day.entries
+  .filter((e) => e.section === sec.id)
+  .sort((a, b) => sortKey(sec, a).localeCompare(sortKey(sec, b)) || (a.createdAt || 0) - (b.createdAt || 0));
+
+function render() {
+  const active = document.activeElement;
+  const focusedText = active?.dataset?.textSection;
+
+  // riquadri riassuntivi in alto
+  $('#today-stats').innerHTML = SECTIONS.filter((s) => s.stat).map((sec) => {
+    const st = sec.stat(itemsOf(sec));
+    return `<button class="tile tone-${sec.id}" data-jump="sec-${sec.id}">
+      ${icon(sec.icon)}<b>${esc(st.value)}${st.unit ? `<small>${esc(st.unit)}</small>` : ''}</b><span>${esc(st.label)}</span></button>`;
+  }).join('');
+
+  $('#sections').innerHTML = SECTIONS.map((sec) => {
+    let body = '';
+    if (sec.type === 'tally') {
+      const items = itemsOf(sec);
+      body = `<div class="tally">${items.map((e) =>
+        `<button class="mark" data-edit="${sec.id}" data-id="${e.id}" aria-label="${esc(sec.title)} delle ${esc(e.ora || '')}">✕<small>${esc(e.ora || '')}</small></button>`).join('')}
+        <button class="add-mark" data-quick="${sec.id}" aria-label="Aggiungi ${esc(sec.title)}">${icon('plus')}</button></div>`;
+    } else if (sec.type === 'list') {
+      const items = itemsOf(sec);
+      body = items.length
+        ? `<ul class="entries">${items.map((e) => entryRow(sec, e)).join('')}</ul>`
+        : `<p class="empty">Ancora niente oggi</p>`;
+      if (sec.timeline) body = timeline(sec, items) + body;
+      if (sec.quick) {
+        const open = items.find((e) => e[sec.quick.from] && !e[sec.quick.to]);
+        body += open
+          ? `<button class="quick wake" data-wake="${sec.id}" data-id="${open.id}">${icon('sun')}${esc(sec.quick.endLabel)}</button>`
+          : `<button class="quick" data-sleep="${sec.id}">${icon(sec.icon)}${esc(sec.quick.startLabel)}</button>`;
+      }
+      body += `<button class="add" data-add="${sec.id}">${icon('plus')}Aggiungi${sec.quick ? ' a mano' : ''}</button>`;
+    } else if (sec.type === 'choice') {
+      const cur = state.day.fields[sec.id];
+      body = `<div class="choices">${sec.options.map((o) =>
+        `<button class="choice ${cur === o ? 'on' : ''}" data-choice="${sec.id}" data-value="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+    } else if (sec.type === 'text') {
+      const val = focusedText === sec.id ? active.value : (state.day.fields[sec.id] || '');
+      body = `<textarea data-text-section="${sec.id}" rows="3" ${state.readOnly ? 'readonly' : ''} placeholder="${esc(sec.placeholder || '')}">${esc(val)}</textarea>`;
+    }
+    const n = sec.type === 'tally' ? `<span class="count">${itemsOf(sec).length}</span>` : '';
+    const total = sec.total ? `<p class="total">${esc(sec.total(itemsOf(sec)))}</p>` : '';
+    return `<section class="card sec tone-${sec.id}" id="sec-${sec.id}">
+      <h2><span class="badge">${icon(sec.icon)}</span><span class="hl">${esc(sec.title)}</span>${n}</h2>
+      ${body}${total}
+    </section>`;
+  }).join('');
+
+  if (focusedText) {
+    const ta = document.querySelector(`[data-text-section="${focusedText}"]`);
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+}
+
+const toMin = (t) => { if (!t) return null; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+
+function timeline(sec, items, date = state.date, { ticks: showTicks = true } = {}) {
+  const { from, to, start, end } = sec.timeline;
+  const a = start * 60, b = end * 60, span = b - a;
+  const isToday = date === isoDate(new Date());
+  const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
+  const pct = (m) => (Math.min(Math.max(m, a), b) - a) / span * 100;
+  const blocks = items.map((e) => {
+    const x = toMin(e[from]); if (x == null) return '';
+    let y = toMin(e[to]); const ongoing = y == null;
+    if (ongoing) y = isToday ? Math.max(nowMin, x + 5) : x + 5;
+    if (y < x) y = b; // passa la mezzanotte: fino a fine scala
+    if (y <= a || x >= b) return '';
+    return `<span class="nap ${ongoing ? 'ongoing' : ''}" style="left:${pct(x)}%;width:${Math.max(pct(y) - pct(x), 0.8)}%"
+      title="${esc(e[from])}${e[to] ? '–' + esc(e[to]) : ''}"></span>`;
+  }).join('');
+  const ticks = [];
+  for (let h = start; h <= end; h += 2) ticks.push(`<span class="tick" style="left:${pct(h * 60)}%">${h}</span>`);
+  const nowMark = isToday && nowMin > a && nowMin < b ? `<span class="now" style="left:${pct(nowMin)}%"></span>` : '';
+  // linee guida ogni 2 ore
+  const grid = [];
+  for (let h = start + 2; h < end; h += 2) grid.push(`<span class="gridline" style="left:${pct(h * 60)}%"></span>`);
+  return `<div class="timeline" aria-label="Linea del tempo dalle ${start} alle ${end}">
+    <div class="track">${grid.join('')}${blocks}${nowMark}</div>${showTicks ? `<div class="ticks">${ticks.join('')}</div>` : ''}</div>`;
+}
+
+const who = (e) => (e.byId && state.names[e.byId]) || e.by || '';
+
+function entryRow(sec, e) {
+  const times = sec.fields.filter((f) => f.type === 'time').map((f) => e[f.key]).filter(Boolean);
+  const rest = sec.fields.filter((f) => f.type !== 'time' && e[f.key] !== undefined && e[f.key] !== '')
+    .map((f) => f.type === 'number' ? `${esc(e[f.key])} ${f.label.match(/\(([^)]+)\)/)?.[1] || ''}` : esc(e[f.key]));
+  if (sec.detail) rest.unshift(`<b>${esc(sec.detail(e))}</b>`);
+  return `<li><button class="entry" data-edit="${sec.id}" data-id="${e.id}">
+    <span class="time">${esc(times.join(' – ') || '—')}</span>
+    <span class="desc">${rest.join(' · ') || '&nbsp;'}</span>
+    ${who(e) ? `<span class="by">${esc(who(e))}</span>` : ''}
+  </button></li>`;
+}
+
+// ───────────────────────── Interazioni ─────────────────────────
+$('#today-stats').addEventListener('click', (ev) => {
+  const t = ev.target.closest('[data-jump]');
+  if (t) document.getElementById(t.dataset.jump)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+$('#sections').addEventListener('click', (ev) => {
+  const t = ev.target.closest('button');
+  if (!t || state.readOnly) return;
+  if (t.dataset.quick) {
+    const sec = SECTIONS.find((s) => s.id === t.dataset.quick);
+    const data = { section: sec.id };
+    for (const f of sec.fields) data[f.key] = f.now ? nowTime() : '';
+    store.addEntry(state.date, data, state.name || '').catch(saveError);
+  } else if (t.dataset.sleep) {
+    const sec = SECTIONS.find((s) => s.id === t.dataset.sleep);
+    const data = { section: sec.id };
+    for (const f of sec.fields) data[f.key] = '';
+    data[sec.quick.from] = nowTime();
+    store.addEntry(state.date, data, state.name || '').catch(saveError);
+  } else if (t.dataset.wake) {
+    const sec = SECTIONS.find((s) => s.id === t.dataset.wake);
+    const e = state.day.entries.find((x) => x.id === t.dataset.id);
+    const { id, by, byId, createdAt, date, ...data } = e;
+    store.updateEntry(state.date, t.dataset.id, { ...data, [sec.quick.to]: nowTime() }, state.name || '').catch(saveError);
+  } else if (t.dataset.add) openEntry(t.dataset.add);
+  else if (t.dataset.edit) openEntry(t.dataset.edit, t.dataset.id);
+  else if (t.dataset.choice) {
+    const cur = state.day.fields[t.dataset.choice];
+    const v = cur === t.dataset.value ? '' : t.dataset.value;
+    store.setField(state.date, t.dataset.choice, v).catch(saveError);
+  }
+});
+
+const timers = {};
+$('#sections').addEventListener('input', (ev) => {
+  const key = ev.target.dataset.textSection;
+  if (!key) return;
+  clearTimeout(timers[key]);
+  const date = state.date, value = ev.target.value;
+  timers[key] = setTimeout(() => store.setField(date, key, value).catch(saveError), 700);
+});
+$('#sections').addEventListener('focusout', (ev) => {
+  const key = ev.target.dataset.textSection;
+  if (!key) return;
+  clearTimeout(timers[key]);
+  if ((state.day.fields[key] || '') !== ev.target.value) store.setField(state.date, key, ev.target.value).catch(saveError);
+});
+
+function setReadOnly(on) {
+  state.readOnly = on;
+  document.body.classList.toggle('readonly', on);
+  $('#readonly-note').classList.toggle('hidden', !on);
+}
+
+function saveError(err) {
+  console.error(err);
+  if (err?.code === 'permission-denied' || err?.code === 'invalid_argument' || err?.code === 'not_granted') {
+    setReadOnly(true); render(); return;
+  }
+  status('Non sono riuscito a salvare: ' + (err.message || err), true);
+}
+
+// ───────────────────────── Finestra voce ─────────────────────────
+const dlg = $('#entry-dialog');
+function openEntry(sectionId, id) {
+  const sec = SECTIONS.find((s) => s.id === sectionId);
+  const entry = id ? state.day.entries.find((e) => e.id === id) : null;
+  state.editing = { sec, id };
+  $('#entry-title').innerHTML = `<span class="badge">${icon(sec.icon)}</span>${esc(sec.title)}`;
+  $('#entry-form').className = `tone-${sec.id}`;
+  $('#entry-delete').classList.toggle('hidden', !id);
+  delete $('#entry-delete').dataset.armed;
+  $('#entry-delete').textContent = 'Elimina';
+  $('#entry-fields').innerHTML = sec.fields.map((f) => {
+    const val = entry ? entry[f.key] ?? '' : (f.now ? nowTime() : '');
+    let input;
+    if (f.type === 'select') {
+      input = `<select name="${f.key}"><option value=""></option>${f.options.map((o) =>
+        `<option ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+    } else {
+      input = `<input name="${f.key}" type="${f.type}" value="${esc(val)}" placeholder="${esc(f.placeholder || '')}"
+        ${f.type === 'number' ? 'inputmode="decimal" step="any" min="0"' : ''}
+        ${f.type === 'number' && !entry ? 'autofocus' : ''}>`;
+    }
+    return `<label>${esc(f.label)}${input}</label>`;
+  }).join('');
+  dlg.showModal();
+}
+
+$('#entry-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const { sec, id } = state.editing;
+  const f = new FormData(ev.target);
+  const data = { section: sec.id };
+  for (const fld of sec.fields) {
+    const v = (f.get(fld.key) || '').toString().trim();
+    data[fld.key] = fld.type === 'number' && v !== '' ? Number(v.replace(',', '.')) : v;
+  }
+  dlg.close();
+  const by = state.name || '';
+  try {
+    if (id) await store.updateEntry(state.date, id, data, by);
+    else await store.addEntry(state.date, data, by);
+  } catch (err) { saveError(err); }
+});
+$('#entry-cancel').addEventListener('click', () => dlg.close());
+$('#entry-delete').addEventListener('click', async (ev) => {
+  const b = ev.currentTarget;
+  if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Sicura? Tocca ancora'; return; }
+  dlg.close();
+  try { await store.deleteEntry(state.date, state.editing.id); } catch (err) { saveError(err); }
+});
+
+
+// ───────────────────────── Settimana ─────────────────────────
+const NAP = SECTIONS.find((s) => s.timeline);
+const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+const mondayOf = (iso) => { const d = parseDate(iso); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return isoDate(d); };
+const addDays = (iso, n) => { const d = parseDate(iso); d.setDate(d.getDate() + n); return isoDate(d); };
+const fmtMin = (m) => { m = Math.round(m); return m >= 60 ? `${Math.floor(m / 60)}h ${pad(m % 60)}m` : `${m}m`; };
+const fmtClock = (m) => `${pad(Math.floor(m / 60) % 24)}:${pad(Math.round(m % 60))}`;
+const napLen = (e) => {
+  const x = toMin(e[NAP.timeline.from]), y = toMin(e[NAP.timeline.to]);
+  if (x == null || y == null) return null;
+  return y >= x ? y - x : y + 1440 - x;
+};
+
+function showView(view) {
+  state.view = view;
+  $('#main').classList.toggle('hidden', view !== 'day');
+  $('#week').classList.toggle('hidden', view !== 'week');
+  document.querySelectorAll('.tabbar button').forEach((b) => b.setAttribute('aria-current', b.dataset.view === view ? 'page' : 'false'));
+  if (view === 'day') openDay(state.date);
+  else openWeek(state.week.start || mondayOf(state.date));
+  window.scrollTo(0, 0);
+}
+
+function openWeek(start) {
+  const w = state.week;
+  w.unsubs.forEach((u) => u());
+  w.start = start; w.days = {};
+  const end = addDays(start, 6);
+  const f = (iso, o) => parseDate(iso).toLocaleDateString('it-IT', o);
+  $('#week-text').textContent = `${f(start, { day: 'numeric', month: 'short' })} – ${f(end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  $('#week-this').classList.toggle('hidden', start === mondayOf(isoDate(new Date())));
+  w.unsubs = [...Array(7)].map((_, i) => {
+    const d = addDays(start, i);
+    return store.subscribeDay(d, (day) => {
+      w.days[d] = day.entries.filter((e) => e.section === NAP.id);
+      renderWeek();
+    }, (err) => status(err.message, true));
+  });
+  renderWeek();
+}
+
+function renderWeek() {
+  const w = state.week;
+  if (!NAP || !w.start) return;
+  const today = isoDate(new Date());
+  const { from, start, end } = NAP.timeline;
+  const rows = [], perDay = [];
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(w.start, i);
+    const items = (w.days[d] || []).slice().sort((a, b) => (a[from] || '').localeCompare(b[from] || ''));
+    const tot = items.reduce((s, e) => s + (napLen(e) || 0), 0);
+    if (items.length) perDay.push({ items, tot });
+    const future = d > today;
+    rows.push(`<button class="wrow ${d === today ? 'today' : ''} ${future ? 'future' : ''}" data-day="${d}">
+      <span class="wday"><b>${WEEKDAYS[i]}</b> ${parseDate(d).getDate()}</span>
+      ${timeline(NAP, items, d, { ticks: false })}
+      <span class="wtot">${items.length ? `${fmtMin(tot)}<small>${items.length} ${items.length === 1 ? 'pisolino' : 'pisolini'}</small>` : '<small>—</small>'}</span>
+    </button>`);
+  }
+  const ticks = [];
+  for (let h = start; h <= end; h += 4) ticks.push(`<span class="tick" style="left:${(h - start) / (end - start) * 100}%">${h}</span>`);
+  $('#week-chart').innerHTML = rows.join('') +
+    `<div class="wrow axis"><span class="wday"></span><div class="ticks">${ticks.join('')}</div><span class="wtot"></span></div>`;
+
+  // medie della settimana
+  const n = perDay.length;
+  const stats = [];
+  if (n) {
+    stats.push(['Pisolini al giorno', (perDay.reduce((s, x) => s + x.items.length, 0) / n).toFixed(1).replace('.', ',')]);
+    stats.push(['Sonno di giorno', fmtMin(perDay.reduce((s, x) => s + x.tot, 0) / n)]);
+  }
+  $('#week-stats').innerHTML = n
+    ? stats.map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b><small>media su ${n} ${n === 1 ? 'giorno' : 'giorni'}</small></div>`).join('')
+    : '<p class="empty">Nessun pisolino segnato in questa settimana.</p>';
+
+  // orario tipico di ogni pisolino (1°, 2°, 3°…)
+  const byIndex = [];
+  for (const { items } of perDay) items.forEach((e, i) => {
+    const x = toMin(e[from]); if (x == null) return;
+    (byIndex[i] ||= []).push({ x, len: napLen(e) });
+  });
+  $('#week-typical').innerHTML = byIndex.length ? `<h3>Orario tipico</h3><ul class="typical">${byIndex.map((arr, i) => {
+    const avgStart = arr.reduce((s, v) => s + v.x, 0) / arr.length;
+    const lens = arr.map((v) => v.len).filter((v) => v != null);
+    const avgLen = lens.length ? lens.reduce((s, v) => s + v, 0) / lens.length : null;
+    const spread = Math.max(...arr.map((v) => v.x)) - Math.min(...arr.map((v) => v.x));
+    return `<li><span class="nth">${i + 1}° pisolino</span>
+      <span>verso le <b>${fmtClock(avgStart)}</b>${avgLen != null ? ` · dura ${fmtMin(avgLen)}` : ''}</span>
+      <small>${arr.length} ${arr.length === 1 ? 'volta' : 'volte'}${arr.length > 1 ? ` · varia di ${fmtMin(spread)}` : ''}</small></li>`;
+  }).join('')}</ul>` : '';
+}
+
+$('#week-prev').addEventListener('click', () => openWeek(addDays(state.week.start, -7)));
+$('#week-next').addEventListener('click', () => openWeek(addDays(state.week.start, 7)));
+$('#week-this').addEventListener('click', () => openWeek(mondayOf(isoDate(new Date()))));
+$('#week-chart').addEventListener('click', (ev) => {
+  const r = ev.target.closest('[data-day]');
+  if (r) { state.date = r.dataset.day; showView('day'); }
+});
+document.querySelector('.tabbar').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-view]');
+  if (!b) return;
+  if (b.dataset.view === 'week') state.week.start = mondayOf(state.date);
+  showView(b.dataset.view);
+});
+
+// ───────────────────────── Impostazioni ─────────────────────────
+const sdlg = $('#settings-dialog');
+$('#btn-settings').addEventListener('click', () => {
+  $('#set-name').value = state.name;
+  $('#mode-info').textContent = store?.shared
+    ? `Agenda condivisa ✅${state.user?.email ? ' — sei collegato come ' + state.user.email : ''}. Tutto quello che scrivi lo vedono anche le altre persone.`
+    : 'Modalità locale: i dati restano solo su questo dispositivo. Per condividerli con Alice segui il README.';
+  $('#btn-logout').classList.toggle('hidden', !(store?.shared && state.user?.email));
+  $('#btn-export').classList.toggle('hidden', store?.download && !store.canDownload);
+  sdlg.showModal();
+});
+$('#settings-form').addEventListener('submit', () => {
+  state.name = $('#set-name').value.trim();
+  try { localStorage.setItem('ceci-name', state.name); } catch {}
+});
+$('#btn-logout').addEventListener('click', async () => { sdlg.close(); await store.signOut(); });
+$('#btn-export').addEventListener('click', async () => {
+  const data = await store.exportAll();
+  const filename = `agenda-${BABY_NAME.toLowerCase()}-${isoDate(new Date())}.json`;
+  if (store.download) { try { await store.download(filename, JSON.stringify(data, null, 2)); } catch {} return; }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// riapre su "oggi" quando l'app torna in primo piano il giorno dopo
+let lastToday = isoDate(new Date());
+document.addEventListener('visibilitychange', () => {
+  const t = isoDate(new Date());
+  if (document.visibilityState === 'visible' && t !== lastToday) {
+    if (state.date === lastToday && state.user && state.view === 'day') openDay(t);
+    lastToday = t;
+  }
+});
+
+setInterval(() => { if (state.user && document.visibilityState === 'visible' && !dlg.open) state.view === 'day' ? render() : renderWeek(); }, 60000);
+
+start();
+
+</script>

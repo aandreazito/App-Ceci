@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Agenda di Ceci</title>
+  <meta name="description" content="Agenda giornaliera condivisa di Cecilia">
+  <meta name="theme-color" content="#fdf7f5">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Agenda Ceci">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20.5c-5-3.3-8-6.2-8-9.6A4.3 4.3 0 0 1 12 8.6a4.3 4.3 0 0 1 8 2.3c0 3.4-3 6.3-8 9.6z"/></svg></span>
+      <div><small class="eyebrow">L'agenda di</small><h1 id="title">Cecilia</h1></div>
+    </div>
+    <button id="btn-settings" class="icon-btn round" aria-label="Impostazioni"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg></button>
+  </header>
+
+  <!-- Login (solo in modalità condivisa) -->
+  <section id="login" class="hidden">
+    <form id="login-form" class="card login">
+      <p class="big" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20.5c-5-3.3-8-6.2-8-9.6A4.3 4.3 0 0 1 12 8.6a4.3 4.3 0 0 1 8 2.3c0 3.4-3 6.3-8 9.6z"/></svg></p>
+      <h2>Accedi all'agenda</h2>
+      <label>Email<input type="email" name="email" autocomplete="username" required></label>
+      <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+      <p id="login-error" class="error"></p>
+      <button class="primary" type="submit">Entra</button>
+      <button type="button" id="btn-reset" class="link">Password dimenticata?</button>
+    </form>
+  </section>
+
+  <main id="main" class="hidden">
+    <nav class="datenav">
+      <button id="prev" class="icon-btn round" aria-label="Giorno precedente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+      <label class="date-label">
+        <small class="eyebrow" id="date-eyebrow">Oggi</small>
+        <span id="date-text"></span>
+        <input type="date" id="date-input" aria-label="Scegli il giorno">
+      </label>
+      <button id="next" class="icon-btn round" aria-label="Giorno successivo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
+    </nav>
+    <button id="today" class="chip hidden">Torna a oggi</button>
+    <p id="readonly-note" class="readonly-note hidden">Stai guardando l'agenda: solo chi l'ha creata e chi ha il permesso di modificarla può aggiungere voci.</p>
+    <div id="today-stats" class="tiles"></div>
+    <div id="sections"></div>
+    <p id="status" class="status"></p>
+  </main>
+
+  <section id="week" class="hidden">
+    <nav class="datenav">
+      <button id="week-prev" class="icon-btn round" aria-label="Settimana precedente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+      <div class="date-label"><small class="eyebrow">Pisolini della settimana</small><span id="week-text"></span></div>
+      <button id="week-next" class="icon-btn round" aria-label="Settimana successiva"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
+    </nav>
+    <button id="week-this" class="chip hidden">Torna a questa settimana</button>
+    <div class="card">
+      <div id="week-chart" class="week-chart"></div>
+      <p class="hint">Tocca un giorno per aprirlo.</p>
+    </div>
+    <div id="week-stats" class="stats"></div>
+    <div id="week-typical" class="card typical-card"></div>
+  </section>
+
+  <nav class="tabbar hidden" aria-label="Sezioni">
+    <button data-view="day" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H8a2 2 0 0 1-2-2z"/><path d="M6 18a2 2 0 0 1 2-2h11"/><path d="M10 8h5"/></svg>Giorno</button>
+    <button data-view="week"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h9M4 12h15M4 18h7" stroke-width="3"/></svg>Settimana</button>
+  </nav>
+
+  <dialog id="entry-dialog">
+    <form method="dialog" id="entry-form">
+      <h3 id="entry-title"></h3>
+      <div id="entry-fields"></div>
+      <div class="row">
+        <button type="button" id="entry-delete" class="danger">Elimina</button>
+        <span class="spacer"></span>
+        <button type="button" id="entry-cancel">Annulla</button>
+        <button type="submit" class="primary">Salva</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" id="settings-form">
+      <h3>Impostazioni</h3>
+      <label>Il tuo nome<input name="name" id="set-name" placeholder="es. Andrea"></label>
+      <p class="hint" id="mode-info"></p>
+      <div class="stack">
+        <button type="button" id="btn-export">⬇️ Scarica backup (JSON)</button>
+        <button type="button" id="btn-logout" class="hidden">Esci</button>
+      </div>
+      <div class="row">
+        <span class="spacer"></span>
+        <button type="submit" class="primary">Fatto</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
