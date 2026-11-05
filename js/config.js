@@ -7,7 +7,14 @@ export const BABY_NAME = 'Cecilia';
 // 1) Per condividere i dati con Alice incolla qui la configurazione
 //    del tuo progetto Firebase (vedi README.md, "Condivisione").
 //    Finché resta `null` l'app funziona solo su questo dispositivo.
-export const FIREBASE_CONFIG = null;
+export const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyD8vfWP-s0PqVudiImcLpNEPenPlFkwBtQ",
+  authDomain: "agenda-ceci.firebaseapp.com",
+  projectId: "agenda-ceci",
+  storageBucket: "agenda-ceci.firebasestorage.app",
+  messagingSenderId: "741995113271",
+  appId: "1:741995113271:web:a5d4191fcc7c3f606f08b2"
+};
 /* Esempio:
 export const FIREBASE_CONFIG = {
   apiKey: "AIza...",
