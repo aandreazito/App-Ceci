@@ -31,6 +31,13 @@ const minutes = (t) => {
   return h * 60 + m;
 };
 
+const duration = (a, b) => {
+  const x = minutes(a), y = minutes(b);
+  if (x == null || y == null) return 0;
+  return y >= x ? y - x : y + 1440 - x;
+};
+const fmtDuration = (m) => `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+
 export const SECTIONS = [
   {
     id: 'pipi',
@@ -58,6 +65,26 @@ export const SECTIONS = [
     total: (items) => `TOT: ${items.reduce((s, i) => s + (Number(i.ml) || 0), 0)} ml`,
   },
   {
+    id: 'pisolini',
+    title: 'Pisolini',
+    icon: '😴',
+    type: 'list',
+    fields: [
+      { key: 'inizio', label: 'Si è addormentata alle', type: 'time', now: true },
+      { key: 'fine', label: 'Si è svegliata alle', type: 'time' },
+      { key: 'note', label: 'Note', type: 'text', placeholder: 'es. in carrozzina, in braccio…' },
+    ],
+    // pulsante rapido: "Si è addormentata ora" → poi "Si è svegliata ora"
+    quick: { from: 'inizio', to: 'fine', startLabel: '😴 Si è addormentata ora', endLabel: '☀️ Si è svegliata ora' },
+    // linea del tempo della giornata (dalle 6 alle 22)
+    timeline: { from: 'inizio', to: 'fine', start: 6, end: 22 },
+    detail: (e) => (e.fine ? fmtDuration(duration(e.inizio, e.fine)) : 'sta dormendo…'),
+    total: (items) => {
+      const tot = items.reduce((s, i) => s + (i.fine ? duration(i.inizio, i.fine) : 0), 0);
+      return `${items.length} ${items.length === 1 ? 'pisolino' : 'pisolini'} · TOT: ${fmtDuration(tot)}`;
+    },
+  },
+  {
     id: 'note',
     title: 'Note',
     icon: '📝',
@@ -67,20 +94,6 @@ export const SECTIONS = [
 ];
 
 /* Altre sezioni pronte da aggiungere all'elenco sopra, se servono:
-
-  { id: 'nanna', title: 'Nanna', icon: '😴', type: 'list',
-    fields: [
-      { key: 'inizio', label: 'Dalle', type: 'time', now: true },
-      { key: 'fine', label: 'Alle', type: 'time' },
-    ],
-    total: (items) => {
-      let tot = 0;
-      for (const i of items) {
-        const a = minutes(i.inizio), b = minutes(i.fine);
-        if (a != null && b != null) tot += b >= a ? b - a : b + 1440 - a;
-      }
-      return `TOT: ${Math.floor(tot / 60)}h ${String(tot % 60).padStart(2, '0')}m`;
-    } },
 
   { id: 'salute', title: 'Salute e medicine', icon: '💊', type: 'list',
     fields: [

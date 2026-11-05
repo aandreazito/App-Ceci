@@ -1,7 +1,7 @@
 # 📒 Agenda di Ceci
 
 Un'agenda digitale per segnare ogni giorno cosa fa Cecilia — pipì, cacca,
-pasti con il totale dei ml, e note — **condivisa in tempo reale tra
+pasti con il totale dei ml, pisolini con orari e note — **condivisa in tempo reale tra
 Andrea e Alice**. È una web‑app che si installa sul telefono come un'app vera
 (icona nella schermata Home) e funziona anche senza connessione.
 
@@ -11,6 +11,8 @@ Andrea e Alice**. È una web‑app che si installa sul telefono come un'app vera
 - **Pipì / Cacca**: ogni tocco su ＋ aggiunge una ✕ (con l'ora salvata).
   Tocca una ✕ per vedere l'ora, correggerla o eliminarla.
 - **Pasti**: ＋ Aggiungi → ora (già compilata) e ml. In fondo il **TOT** dei ml.
+- **Pisolini**: "Si è addormentata ora" e poi "Si è svegliata ora" (oppure a mano).
+  Una linea del tempo dalle 6 alle 22 mostra quando ha dormito, con il totale.
 - Tocca una riga per modificarla o eliminarla.
 - Ogni voce mostra chi l'ha inserita (il nome si imposta da ⚙️).
 - ⚙️ → *Scarica backup* per salvare tutti i dati in un file.
@@ -19,7 +21,7 @@ Andrea e Alice**. È una web‑app che si installa sul telefono come un'app vera
 
 Tutta la struttura della pagina è in [`js/config.js`](js/config.js): si possono
 aggiungere, togliere o rinominare sezioni e campi senza toccare il resto del
-codice. In fondo al file ci sono già pronte Nanna, Salute e Umore da attivare.
+codice. In fondo al file ci sono già pronte Salute e Umore da attivare.
 
 ## 0. Il modo più rapido: dentro Claude
 

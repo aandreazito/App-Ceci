@@ -129,7 +129,14 @@ function render() {
       body = items.length
         ? `<ul class="entries">${items.map((e) => entryRow(sec, e)).join('')}</ul>`
         : `<p class="empty">Ancora niente oggi</p>`;
-      body += `<button class="add" data-add="${sec.id}">＋ Aggiungi</button>`;
+      if (sec.timeline) body = timeline(sec, items) + body;
+      if (sec.quick) {
+        const open = items.find((e) => e[sec.quick.from] && !e[sec.quick.to]);
+        body += open
+          ? `<button class="quick" data-wake="${sec.id}" data-id="${open.id}">${esc(sec.quick.endLabel)}</button>`
+          : `<button class="quick" data-sleep="${sec.id}">${esc(sec.quick.startLabel)}</button>`;
+      }
+      body += `<button class="add" data-add="${sec.id}">＋ Aggiungi${sec.quick ? ' a mano' : ''}</button>`;
     } else if (sec.type === 'choice') {
       const cur = state.day.fields[sec.id];
       body = `<div class="choices">${sec.options.map((o) =>
@@ -153,12 +160,37 @@ function render() {
   }
 }
 
+const toMin = (t) => { if (!t) return null; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+
+function timeline(sec, items) {
+  const { from, to, start, end } = sec.timeline;
+  const a = start * 60, b = end * 60, span = b - a;
+  const isToday = state.date === isoDate(new Date());
+  const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
+  const pct = (m) => (Math.min(Math.max(m, a), b) - a) / span * 100;
+  const blocks = items.map((e) => {
+    const x = toMin(e[from]); if (x == null) return '';
+    let y = toMin(e[to]); const ongoing = y == null;
+    if (ongoing) y = isToday ? Math.max(nowMin, x + 5) : x + 5;
+    if (y < x) y = b; // passa la mezzanotte: fino a fine scala
+    if (y <= a || x >= b) return '';
+    return `<span class="nap ${ongoing ? 'ongoing' : ''}" style="left:${pct(x)}%;width:${Math.max(pct(y) - pct(x), 0.8)}%"
+      title="${esc(e[from])}${e[to] ? '–' + esc(e[to]) : ''}"></span>`;
+  }).join('');
+  const ticks = [];
+  for (let h = start; h <= end; h += 2) ticks.push(`<span class="tick" style="left:${pct(h * 60)}%">${h}</span>`);
+  const nowMark = isToday && nowMin > a && nowMin < b ? `<span class="now" style="left:${pct(nowMin)}%"></span>` : '';
+  return `<div class="timeline" aria-label="Linea del tempo dalle ${start} alle ${end}">
+    <div class="track">${blocks}${nowMark}</div><div class="ticks">${ticks.join('')}</div></div>`;
+}
+
 const who = (e) => (e.byId && state.names[e.byId]) || e.by || '';
 
 function entryRow(sec, e) {
   const times = sec.fields.filter((f) => f.type === 'time').map((f) => e[f.key]).filter(Boolean);
   const rest = sec.fields.filter((f) => f.type !== 'time' && e[f.key] !== undefined && e[f.key] !== '')
     .map((f) => f.type === 'number' ? `${esc(e[f.key])} ${f.label.match(/\(([^)]+)\)/)?.[1] || ''}` : esc(e[f.key]));
+  if (sec.detail) rest.unshift(`<b>${esc(sec.detail(e))}</b>`);
   return `<li><button class="entry" data-edit="${sec.id}" data-id="${e.id}">
     <span class="time">${esc(times.join(' – ') || '—')}</span>
     <span class="desc">${rest.join(' · ') || '&nbsp;'}</span>
@@ -175,6 +207,17 @@ $('#sections').addEventListener('click', (ev) => {
     const data = { section: sec.id };
     for (const f of sec.fields) data[f.key] = f.now ? nowTime() : '';
     store.addEntry(state.date, data, state.name || '').catch(saveError);
+  } else if (t.dataset.sleep) {
+    const sec = SECTIONS.find((s) => s.id === t.dataset.sleep);
+    const data = { section: sec.id };
+    for (const f of sec.fields) data[f.key] = '';
+    data[sec.quick.from] = nowTime();
+    store.addEntry(state.date, data, state.name || '').catch(saveError);
+  } else if (t.dataset.wake) {
+    const sec = SECTIONS.find((s) => s.id === t.dataset.wake);
+    const e = state.day.entries.find((x) => x.id === t.dataset.id);
+    const { id, by, byId, createdAt, date, ...data } = e;
+    store.updateEntry(state.date, t.dataset.id, { ...data, [sec.quick.to]: nowTime() }, state.name || '').catch(saveError);
   } else if (t.dataset.add) openEntry(t.dataset.add);
   else if (t.dataset.edit) openEntry(t.dataset.edit, t.dataset.id);
   else if (t.dataset.choice) {
@@ -289,5 +332,7 @@ document.addEventListener('visibilitychange', () => {
     lastToday = t;
   }
 });
+
+setInterval(() => { if (state.user && document.visibilityState === 'visible' && !dlg.open) render(); }, 60000);
 
 start();
