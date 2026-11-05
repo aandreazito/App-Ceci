@@ -289,6 +289,14 @@ button.link { background: none; color: var(--muted); text-decoration: underline;
 .typical .nth { font: 700 1.35rem/1.1 var(--f-hand); color: var(--nap); grid-row: span 2; align-self: center; }
 .typical small { grid-column: 2; color: var(--muted); font-size: .74rem; }
 
+/* ── solo lettura (es. i nonni) ── */
+.readonly-note {
+  margin: -4px 0 12px; padding: 10px 14px; border-radius: 14px;
+  background: var(--brand-soft); font-size: .85rem; font-weight: 600; text-align: center;
+}
+.readonly .add, .readonly .add-mark, .readonly .quick { display: none; }
+.readonly .entry, .readonly .mark { cursor: default; }
+
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
 }

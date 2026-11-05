@@ -126,11 +126,14 @@ export async function createClaudeStore() {
   const user = await window.claude.use('user');
   const downloads = await window.claude.use('downloads');
   const myId = (await user?.id()) || '';
+  // chi ha solo il permesso di guardare (es. i nonni) non può scrivere
+  const readOnly = (await user?.can?.('data.write')) === false;
   const entries = db.collection('entries');
   const notes = db.collection('days');
 
   return {
     shared: true,
+    readOnly,
     canDownload: !!downloads,
     async init(onUser) { onUser({ email: null, id: myId }); },
     async signIn() {},

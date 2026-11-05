@@ -296,6 +296,14 @@ button.link { background: none; color: var(--muted); text-decoration: underline;
 .typical .nth { font: 700 1.35rem/1.1 var(--f-hand); color: var(--nap); grid-row: span 2; align-self: center; }
 .typical small { grid-column: 2; color: var(--muted); font-size: .74rem; }
 
+/* ── solo lettura (es. i nonni) ── */
+.readonly-note {
+  margin: -4px 0 12px; padding: 10px 14px; border-radius: 14px;
+  background: var(--brand-soft); font-size: .85rem; font-weight: 600; text-align: center;
+}
+.readonly .add, .readonly .add-mark, .readonly .quick { display: none; }
+.readonly .entry, .readonly .mark { cursor: default; }
+
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
 }
@@ -342,6 +350,7 @@ main, #login, #week { padding-left: max(16px, env(safe-area-inset-left, 0px)); p
       <button id="next" class="icon-btn round" aria-label="Giorno successivo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
     </nav>
     <button id="today" class="chip hidden">Torna a oggi</button>
+    <p id="readonly-note" class="readonly-note hidden">Stai guardando l'agenda: solo chi l'ha creata e chi ha il permesso di modificarla può aggiungere voci.</p>
     <div id="today-stats" class="tiles"></div>
     <div id="sections"></div>
     <p id="status" class="status"></p>
@@ -660,11 +669,14 @@ async function createClaudeStore() {
   const user = await window.claude.use('user');
   const downloads = await window.claude.use('downloads');
   const myId = (await user?.id()) || '';
+  // chi ha solo il permesso di guardare (es. i nonni) non può scrivere
+  const readOnly = (await user?.can?.('data.write')) === false;
   const entries = db.collection('entries');
   const notes = db.collection('days');
 
   return {
     shared: true,
+    readOnly,
     canDownload: !!downloads,
     async init(onUser) { onUser({ email: null, id: myId }); },
     async signIn() {},
@@ -759,6 +771,7 @@ async function start() {
       return;
     }
     state.user = user;
+    setReadOnly(!!store.readOnly);
     if (!state.name && user.email) state.name = user.email.split('@')[0];
     $('#login').classList.add('hidden');
     $('.tabbar').classList.remove('hidden');
@@ -865,7 +878,7 @@ function render() {
         `<button class="choice ${cur === o ? 'on' : ''}" data-choice="${sec.id}" data-value="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
     } else if (sec.type === 'text') {
       const val = focusedText === sec.id ? active.value : (state.day.fields[sec.id] || '');
-      body = `<textarea data-text-section="${sec.id}" rows="3" placeholder="${esc(sec.placeholder || '')}">${esc(val)}</textarea>`;
+      body = `<textarea data-text-section="${sec.id}" rows="3" ${state.readOnly ? 'readonly' : ''} placeholder="${esc(sec.placeholder || '')}">${esc(val)}</textarea>`;
     }
     const n = sec.type === 'tally' ? `<span class="count">${itemsOf(sec).length}</span>` : '';
     const total = sec.total ? `<p class="total">${esc(sec.total(itemsOf(sec)))}</p>` : '';
@@ -930,7 +943,7 @@ $('#today-stats').addEventListener('click', (ev) => {
 });
 $('#sections').addEventListener('click', (ev) => {
   const t = ev.target.closest('button');
-  if (!t) return;
+  if (!t || state.readOnly) return;
   if (t.dataset.quick) {
     const sec = SECTIONS.find((s) => s.id === t.dataset.quick);
     const data = { section: sec.id };
@@ -971,8 +984,17 @@ $('#sections').addEventListener('focusout', (ev) => {
   if ((state.day.fields[key] || '') !== ev.target.value) store.setField(state.date, key, ev.target.value).catch(saveError);
 });
 
+function setReadOnly(on) {
+  state.readOnly = on;
+  document.body.classList.toggle('readonly', on);
+  $('#readonly-note').classList.toggle('hidden', !on);
+}
+
 function saveError(err) {
   console.error(err);
+  if (err?.code === 'permission-denied' || err?.code === 'invalid_argument' || err?.code === 'not_granted') {
+    setReadOnly(true); render(); return;
+  }
   status('Non sono riuscito a salvare: ' + (err.message || err), true);
 }
 

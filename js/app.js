@@ -51,6 +51,7 @@ async function start() {
       return;
     }
     state.user = user;
+    setReadOnly(!!store.readOnly);
     if (!state.name && user.email) state.name = user.email.split('@')[0];
     $('#login').classList.add('hidden');
     $('.tabbar').classList.remove('hidden');
@@ -157,7 +158,7 @@ function render() {
         `<button class="choice ${cur === o ? 'on' : ''}" data-choice="${sec.id}" data-value="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
     } else if (sec.type === 'text') {
       const val = focusedText === sec.id ? active.value : (state.day.fields[sec.id] || '');
-      body = `<textarea data-text-section="${sec.id}" rows="3" placeholder="${esc(sec.placeholder || '')}">${esc(val)}</textarea>`;
+      body = `<textarea data-text-section="${sec.id}" rows="3" ${state.readOnly ? 'readonly' : ''} placeholder="${esc(sec.placeholder || '')}">${esc(val)}</textarea>`;
     }
     const n = sec.type === 'tally' ? `<span class="count">${itemsOf(sec).length}</span>` : '';
     const total = sec.total ? `<p class="total">${esc(sec.total(itemsOf(sec)))}</p>` : '';
@@ -222,7 +223,7 @@ $('#today-stats').addEventListener('click', (ev) => {
 });
 $('#sections').addEventListener('click', (ev) => {
   const t = ev.target.closest('button');
-  if (!t) return;
+  if (!t || state.readOnly) return;
   if (t.dataset.quick) {
     const sec = SECTIONS.find((s) => s.id === t.dataset.quick);
     const data = { section: sec.id };
@@ -263,8 +264,17 @@ $('#sections').addEventListener('focusout', (ev) => {
   if ((state.day.fields[key] || '') !== ev.target.value) store.setField(state.date, key, ev.target.value).catch(saveError);
 });
 
+function setReadOnly(on) {
+  state.readOnly = on;
+  document.body.classList.toggle('readonly', on);
+  $('#readonly-note').classList.toggle('hidden', !on);
+}
+
 function saveError(err) {
   console.error(err);
+  if (err?.code === 'permission-denied' || err?.code === 'invalid_argument' || err?.code === 'not_granted') {
+    setReadOnly(true); render(); return;
+  }
   status('Non sono riuscito a salvare: ' + (err.message || err), true);
 }
 
