@@ -42,32 +42,38 @@ export const SECTIONS = [
   {
     id: 'pipi',
     title: 'Pipì',
-    icon: '💧',
+    icon: 'pipi',
     type: 'tally', // ogni tocco su "＋" aggiunge una ✕ (con l'ora)
     fields: [{ key: 'ora', label: 'Ora', type: 'time', now: true }],
+    stat: (items) => ({ value: items.length, label: 'pipì' }),
   },
   {
     id: 'cacca',
     title: 'Cacca',
-    icon: '💩',
+    icon: 'cacca',
     type: 'tally',
     fields: [{ key: 'ora', label: 'Ora', type: 'time', now: true }],
+    stat: (items) => ({ value: items.length, label: 'cacca' }),
   },
   {
     id: 'pasti',
     title: 'Pasti',
-    icon: '🍼',
+    icon: 'pasti',
     type: 'list',
     fields: [
       { key: 'ora', label: 'Ora', type: 'time', now: true },
       { key: 'ml', label: 'Quantità (ml)', type: 'number', step: 10 },
     ],
     total: (items) => `TOT: ${items.reduce((s, i) => s + (Number(i.ml) || 0), 0)} ml`,
+    stat: (items) => ({
+      value: items.reduce((s, i) => s + (Number(i.ml) || 0), 0), unit: 'ml',
+      label: `${items.length} ${items.length === 1 ? 'pasto' : 'pasti'}`,
+    }),
   },
   {
     id: 'pisolini',
     title: 'Pisolini',
-    icon: '😴',
+    icon: 'pisolini',
     type: 'list',
     fields: [
       { key: 'inizio', label: 'Si è addormentata alle', type: 'time', now: true },
@@ -75,19 +81,23 @@ export const SECTIONS = [
       { key: 'note', label: 'Note', type: 'text', placeholder: 'es. in carrozzina, in braccio…' },
     ],
     // pulsante rapido: "Si è addormentata ora" → poi "Si è svegliata ora"
-    quick: { from: 'inizio', to: 'fine', startLabel: '😴 Si è addormentata ora', endLabel: '☀️ Si è svegliata ora' },
+    quick: { from: 'inizio', to: 'fine', startLabel: 'Si è addormentata ora', endLabel: 'Si è svegliata ora' },
     // linea del tempo della giornata (dalle 6 alle 22)
     timeline: { from: 'inizio', to: 'fine', start: 6, end: 22 },
     detail: (e) => (e.fine ? fmtDuration(duration(e.inizio, e.fine)) : 'sta dormendo…'),
     total: (items) => {
       const tot = items.reduce((s, i) => s + (i.fine ? duration(i.inizio, i.fine) : 0), 0);
-      return `${items.length} ${items.length === 1 ? 'pisolino' : 'pisolini'} · TOT: ${fmtDuration(tot)}`;
+      return `TOT: ${fmtDuration(tot)}`;
     },
+    stat: (items) => ({
+      value: fmtDuration(items.reduce((s, i) => s + (i.fine ? duration(i.inizio, i.fine) : 0), 0)),
+      label: `${items.length} ${items.length === 1 ? 'pisolino' : 'pisolini'}`,
+    }),
   },
   {
     id: 'note',
     title: 'Note',
-    icon: '📝',
+    icon: 'note',
     type: 'text',
     placeholder: 'Cose da dire all\'altra, da ricordare, da comprare…',
   },
@@ -95,12 +105,12 @@ export const SECTIONS = [
 
 /* Altre sezioni pronte da aggiungere all'elenco sopra, se servono:
 
-  { id: 'salute', title: 'Salute e medicine', icon: '💊', type: 'list',
+  { id: 'salute', title: 'Salute e medicine', icon: 'salute', type: 'list',
     fields: [
       { key: 'ora', label: 'Ora', type: 'time', now: true },
       { key: 'cosa', label: 'Cosa', type: 'text', placeholder: 'es. Tachipirina, febbre 37.8°' },
     ] },
 
-  { id: 'umore', title: 'Umore', icon: '🌈', type: 'choice',
+  { id: 'umore', title: 'Umore', icon: 'umore', type: 'choice',
     options: ['😄 Felice', '🙂 Tranquilla', '😢 Nervosa', '🤒 Malaticcia'] },
 */

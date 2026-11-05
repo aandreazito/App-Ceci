@@ -1,4 +1,5 @@
 import { BABY_NAME, FIREBASE_CONFIG, SECTIONS } from './config.js';
+import { icon } from './icons.js';
 import { createLocalStore, createFirebaseStore, createClaudeStore } from './store.js';
 
 const $ = (s) => document.querySelector(s);
@@ -28,7 +29,7 @@ const status = (msg, isError = false) => {
 
 // ───────────────────────── Avvio ─────────────────────────
 async function start() {
-  $('#title').textContent = `Agenda di ${BABY_NAME}`;
+  $('#title').textContent = BABY_NAME;
   document.title = `Agenda di ${BABY_NAME}`;
   try {
     if (typeof window.claude?.use === 'function') {
@@ -82,8 +83,10 @@ function openDay(date) {
   state.date = date;
   state.unsub?.();
   const d = parseDate(date);
-  const txt = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  $('#date-text').textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
+  const diff = Math.round((d - parseDate(isoDate(new Date()))) / 864e5);
+  const rel = { 0: 'Oggi', [-1]: 'Ieri', 1: 'Domani' }[diff];
+  $('#date-eyebrow').textContent = rel || d.toLocaleDateString('it-IT', { weekday: 'long' });
+  $('#date-text').textContent = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
   $('#date-input').value = date;
   $('#today').classList.toggle('hidden', date === isoDate(new Date()));
   state.unsub = store.subscribeDay(date, async (day) => {
@@ -121,13 +124,20 @@ function render() {
   const active = document.activeElement;
   const focusedText = active?.dataset?.textSection;
 
+  // riquadri riassuntivi in alto
+  $('#today-stats').innerHTML = SECTIONS.filter((s) => s.stat).map((sec) => {
+    const st = sec.stat(itemsOf(sec));
+    return `<button class="tile tone-${sec.id}" data-jump="sec-${sec.id}">
+      ${icon(sec.icon)}<b>${esc(st.value)}${st.unit ? `<small>${esc(st.unit)}</small>` : ''}</b><span>${esc(st.label)}</span></button>`;
+  }).join('');
+
   $('#sections').innerHTML = SECTIONS.map((sec) => {
     let body = '';
     if (sec.type === 'tally') {
       const items = itemsOf(sec);
       body = `<div class="tally">${items.map((e) =>
-        `<button class="mark" data-edit="${sec.id}" data-id="${e.id}" title="${esc(e.ora || '')}${who(e) ? ' · ' + esc(who(e)) : ''}">✕</button>`).join('')}
-        <button class="mark add-mark" data-quick="${sec.id}" aria-label="Aggiungi ${esc(sec.title)}">＋</button></div>`;
+        `<button class="mark" data-edit="${sec.id}" data-id="${e.id}" aria-label="${esc(sec.title)} delle ${esc(e.ora || '')}">✕<small>${esc(e.ora || '')}</small></button>`).join('')}
+        <button class="add-mark" data-quick="${sec.id}" aria-label="Aggiungi ${esc(sec.title)}">${icon('plus')}</button></div>`;
     } else if (sec.type === 'list') {
       const items = itemsOf(sec);
       body = items.length
@@ -137,10 +147,10 @@ function render() {
       if (sec.quick) {
         const open = items.find((e) => e[sec.quick.from] && !e[sec.quick.to]);
         body += open
-          ? `<button class="quick" data-wake="${sec.id}" data-id="${open.id}">${esc(sec.quick.endLabel)}</button>`
-          : `<button class="quick" data-sleep="${sec.id}">${esc(sec.quick.startLabel)}</button>`;
+          ? `<button class="quick wake" data-wake="${sec.id}" data-id="${open.id}">${icon('sun')}${esc(sec.quick.endLabel)}</button>`
+          : `<button class="quick" data-sleep="${sec.id}">${icon(sec.icon)}${esc(sec.quick.startLabel)}</button>`;
       }
-      body += `<button class="add" data-add="${sec.id}">＋ Aggiungi${sec.quick ? ' a mano' : ''}</button>`;
+      body += `<button class="add" data-add="${sec.id}">${icon('plus')}Aggiungi${sec.quick ? ' a mano' : ''}</button>`;
     } else if (sec.type === 'choice') {
       const cur = state.day.fields[sec.id];
       body = `<div class="choices">${sec.options.map((o) =>
@@ -151,8 +161,8 @@ function render() {
     }
     const n = sec.type === 'tally' ? `<span class="count">${itemsOf(sec).length}</span>` : '';
     const total = sec.total ? `<p class="total">${esc(sec.total(itemsOf(sec)))}</p>` : '';
-    return `<section class="card sec-${sec.id}">
-      <h2><span>${sec.icon}</span> ${esc(sec.title)} ${n}</h2>
+    return `<section class="card sec tone-${sec.id}" id="sec-${sec.id}">
+      <h2><span class="badge">${icon(sec.icon)}</span><span class="hl">${esc(sec.title)}</span>${n}</h2>
       ${body}${total}
     </section>`;
   }).join('');
@@ -206,6 +216,10 @@ function entryRow(sec, e) {
 }
 
 // ───────────────────────── Interazioni ─────────────────────────
+$('#today-stats').addEventListener('click', (ev) => {
+  const t = ev.target.closest('[data-jump]');
+  if (t) document.getElementById(t.dataset.jump)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 $('#sections').addEventListener('click', (ev) => {
   const t = ev.target.closest('button');
   if (!t) return;
@@ -260,7 +274,8 @@ function openEntry(sectionId, id) {
   const sec = SECTIONS.find((s) => s.id === sectionId);
   const entry = id ? state.day.entries.find((e) => e.id === id) : null;
   state.editing = { sec, id };
-  $('#entry-title').textContent = `${sec.icon} ${sec.title}`;
+  $('#entry-title').innerHTML = `<span class="badge">${icon(sec.icon)}</span>${esc(sec.title)}`;
+  $('#entry-form').className = `tone-${sec.id}`;
   $('#entry-delete').classList.toggle('hidden', !id);
   delete $('#entry-delete').dataset.armed;
   $('#entry-delete').textContent = 'Elimina';
