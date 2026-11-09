@@ -53,6 +53,7 @@ async function start() {
     }
     state.user = user;
     setReadOnly(!!store.readOnly);
+    watchWeights();
     if (!state.name && user.email) state.name = user.email.split('@')[0];
     $('#login').classList.add('hidden');
     $('.tabbar').classList.remove('hidden');
@@ -354,8 +355,7 @@ function openEntry(sectionId, id) {
   $('#entry-title').innerHTML = `<span class="badge">${icon(sec.icon)}</span>${esc(sec.title)}`;
   $('#entry-form').className = `tone-${sec.id}`;
   $('#entry-delete').classList.toggle('hidden', !id);
-  delete $('#entry-delete').dataset.armed;
-  $('#entry-delete').textContent = 'Elimina';
+  disarm($('#entry-delete'));
   $('#entry-fields').innerHTML = sec.fields.map((f) => {
     const val = entry ? entry[f.key] ?? '' : (f.now ? nowTime() : '');
     let input;
@@ -389,9 +389,21 @@ $('#entry-form').addEventListener('submit', async (ev) => {
   } catch (err) { saveError(err); }
 });
 $('#entry-cancel').addEventListener('click', () => dlg.close());
+// eliminazione in due tocchi: il primo chiede conferma, il secondo elimina
+function disarm(b) {
+  delete b.dataset.armed;
+  b.classList.remove('armed');
+  b.innerHTML = `${icon('trash')}<span>Elimina</span>`;
+}
+function armOrConfirm(b) {
+  if (b.dataset.armed) return true;
+  b.dataset.armed = '1';
+  b.classList.add('armed');
+  b.innerHTML = `${icon('trash')}<span>Sì, elimina</span>`;
+  return false;
+}
 $('#entry-delete').addEventListener('click', async (ev) => {
-  const b = ev.currentTarget;
-  if (!b.dataset.armed) { b.dataset.armed = '1'; b.textContent = 'Sicura? Tocca ancora'; return; }
+  if (!armOrConfirm(ev.currentTarget)) return;
   dlg.close();
   try { await store.deleteEntry(state.date, state.editing.id); } catch (err) { saveError(err); }
 });
@@ -443,6 +455,7 @@ function renderWeek() {
   const w = state.week;
   if (!w.start) return;
   renderMilkWeek();
+  renderWeight();
   if (!NAP) return;
   const today = isoDate(new Date());
   const { from, start, end } = NAP.timeline;
@@ -491,6 +504,122 @@ function renderWeek() {
       <small>${arr.length} ${arr.length === 1 ? 'volta' : 'volte'}${arr.length > 1 ? ` · varia di ${fmtMin(spread)}` : ''}</small></li>`;
   }).join('')}</ul>` : '';
 }
+
+// ───────────────────────── Peso ─────────────────────────
+state.weights = [];
+let weightsUnsub = null;
+const fmtKg = (kg) => kg.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const shortDate = (iso) => parseDate(iso).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+const daysBetween = (a, b) => Math.round((parseDate(b) - parseDate(a)) / 864e5);
+const signG = (g) => `${g > 0 ? '+' : g < 0 ? '−' : '±'}${Math.abs(Math.round(g))} g`;
+
+function watchWeights() {
+  weightsUnsub?.();
+  if (!store.subscribeWeights) return;
+  weightsUnsub = store.subscribeWeights((list) => {
+    state.weights = list.filter((w) => Number(w.kg) > 0).sort((a, b) => a.date.localeCompare(b.date));
+    if (state.view === 'week') renderWeight();
+  }, (err) => console.error(err));
+}
+
+// accetta "5,42", "5.42" o grammi ("5420")
+function parseKg(text) {
+  let v = Number(String(text).trim().replace(/\s|kg/gi, '').replace(',', '.'));
+  if (!Number.isFinite(v) || v <= 0) return null;
+  if (v > 100) v /= 1000;
+  return v >= 1 && v <= 30 ? Math.round(v * 1000) / 1000 : null;
+}
+
+function weightDelta(i) {
+  const w = state.weights, prev = w[i - 1];
+  if (!prev) return null;
+  const g = (w[i].kg - prev.kg) * 1000, days = daysBetween(prev.date, w[i].date);
+  return { g, days, perDay: days ? g / days : null, prev };
+}
+
+function renderWeight() {
+  if (!$('#weight-badge').innerHTML) $('#weight-badge').innerHTML = icon('peso');
+  const w = state.weights, start = state.week.start, end = addDays(start, 6);
+  const today = isoDate(new Date());
+  const dateInput = $('#weight-date');
+  if (document.activeElement !== dateInput && !dateInput.dataset.week?.startsWith(start)) {
+    dateInput.value = today >= start && today <= end ? today : start;
+    dateInput.dataset.week = start;
+  }
+
+  // riepilogo: l'ultima pesata fino alla fine di questa settimana
+  let idx = -1;
+  w.forEach((x, i) => { if (x.date <= end) idx = i; });
+  if (idx < 0) {
+    $('#weight-summary').innerHTML = `<p class="empty">Nessuna pesata ancora. Inserisci la prima qui sotto.</p>`;
+  } else {
+    const cur = w[idx], d = weightDelta(idx), inWeek = cur.date >= start;
+    $('#weight-summary').innerHTML = `<div class="weight-now">
+      <b>${fmtKg(cur.kg)} <small>kg</small></b>
+      <span>${inWeek ? 'pesata' : 'ultima pesata'} ${shortDate(cur.date)}</span>
+      ${d ? `<span class="weight-delta ${d.g >= 0 ? 'up' : 'down'}">${signG(d.g)} dal ${shortDate(d.prev.date)}${d.perDay != null ? ` · circa ${signG(d.perDay)} al giorno` : ''}</span>` : ''}
+    </div>${inWeek ? '' : '<p class="hint">Nessuna pesata in questa settimana.</p>'}`;
+  }
+
+  // grafico: dalla seconda pesata in poi
+  const pts = w.slice(-20);
+  if (pts.length < 2) {
+    $('#weight-chart').innerHTML = w.length === 1 ? '<p class="hint">Il grafico compare dalla seconda pesata.</p>' : '';
+  } else {
+    const W = 320, H = 150, L = 34, R = 12, T = 14, B = 22;
+    const t0 = parseDate(pts[0].date), t1 = parseDate(pts[pts.length - 1].date);
+    const span = Math.max(t1 - t0, 864e5);
+    let lo = Math.min(...pts.map((p) => p.kg)), hi = Math.max(...pts.map((p) => p.kg));
+    const pad = Math.max((hi - lo) * 0.15, 0.1);
+    lo = Math.floor((lo - pad) * 10) / 10; hi = Math.ceil((hi + pad) * 10) / 10;
+    const x = (iso) => L + (parseDate(iso) - t0) / span * (W - L - R);
+    const y = (kg) => T + (hi - kg) / (hi - lo) * (H - T - B);
+    const ticks = [lo, (lo + hi) / 2, hi];
+    const grid = ticks.map((k) => `<line x1="${L}" x2="${W - R}" y1="${y(k)}" y2="${y(k)}" class="wgrid"/>
+      <text x="${L - 6}" y="${y(k) + 3.5}" class="wtick" text-anchor="end">${k.toLocaleString('it-IT', { maximumFractionDigits: 1, minimumFractionDigits: 1 })}</text>`).join('');
+    const path = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.date).toFixed(1)},${y(p.kg).toFixed(1)}`).join(' ');
+    const dots = pts.map((p) => {
+      const on = p.date >= start && p.date <= end;
+      return `<circle cx="${x(p.date)}" cy="${y(p.kg)}" r="${on ? 5.5 : 4}" class="wdot ${on ? 'on' : ''}"><title>${shortDate(p.date)}: ${fmtKg(p.kg)} kg</title></circle>`;
+    }).join('');
+    const last = pts[pts.length - 1];
+    $('#weight-chart').innerHTML = `<svg class="wsvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Andamento del peso: da ${fmtKg(pts[0].kg)} kg a ${fmtKg(last.kg)} kg">
+      ${grid}<path d="${path}" class="wline"/>${dots}
+      <text x="${x(last.date)}" y="${y(last.kg) - 10}" class="wlabel" text-anchor="end">${fmtKg(last.kg)} kg</text>
+      <text x="${L}" y="${H - 5}" class="wtick">${shortDate(pts[0].date)}</text>
+      <text x="${W - R}" y="${H - 5}" class="wtick" text-anchor="end">${shortDate(last.date)}</text>
+    </svg>`;
+  }
+
+  // elenco delle pesate, dalla più recente
+  $('#weight-list').innerHTML = w.map((p, i) => ({ p, d: weightDelta(i) })).reverse().slice(0, 8).map(({ p, d }) => `
+    <li><span class="wl-date">${shortDate(p.date)}</span><b>${fmtKg(p.kg)} kg</b>
+      <span class="wl-delta">${d ? signG(d.g) : ''}</span>
+      <button type="button" class="danger-btn small" data-wdel="${p.date}" aria-label="Elimina la pesata del ${shortDate(p.date)}">${icon('trash')}<span>Elimina</span></button></li>`).join('');
+}
+
+$('#weight-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const kg = parseKg($('#weight-kg').value), date = $('#weight-date').value, msg = $('#weight-msg');
+  msg.classList.remove('error');
+  if (!kg || !date) {
+    msg.textContent = 'Scrivi il peso in kg, per esempio 5,42 (oppure in grammi: 5420).';
+    msg.classList.add('error');
+    return;
+  }
+  const existed = state.weights.some((x) => x.date === date);
+  try {
+    await store.setWeight(date, kg, state.name || '');
+    $('#weight-kg').value = '';
+    msg.textContent = `${existed ? 'Aggiornato' : 'Salvato'}: ${fmtKg(kg)} kg il ${shortDate(date)}.`;
+  } catch (err) { saveError(err); }
+});
+$('#weight-list').addEventListener('click', async (ev) => {
+  const b = ev.target.closest('[data-wdel]');
+  if (!b || state.readOnly) return;
+  if (!armOrConfirm(b)) return;
+  try { await store.deleteWeight(b.dataset.wdel); } catch (err) { saveError(err); }
+});
 
 // grafico del latte: una colonna per giorno, oggi con la proiezione a fine giornata
 function renderMilkWeek() {

@@ -17,7 +17,9 @@ Andrea e Alice**. È una web‑app che si installa sul telefono come un'app vera
   e il totale previsto a fine giornata (dopo almeno 3 giorni di pasti segnati; vedi `js/predict.js`).
 - **Settimana** (barra in basso): i pisolini dei 7 giorni uno sotto l'altro per
   confrontare gli orari, con medie della settimana e orario tipico di ogni pisolino;
-  sotto, il grafico dei ml di latte di ogni giorno con la media e la proiezione di oggi.
+  sotto, il grafico dei ml di latte di ogni giorno con la media e la proiezione di oggi,
+  e la sezione **Peso**: si inserisce una volta a settimana (in kg o in grammi) e mostra
+  aumento, grammi al giorno e grafico dell'andamento.
 - Tocca una riga per modificarla o eliminarla.
 - Ogni voce mostra chi l'ha inserita (il nome si imposta da ⚙️).
 - ⚙️ → *Scarica backup* per salvare tutti i dati in un file.
