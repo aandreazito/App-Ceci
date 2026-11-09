@@ -18,11 +18,15 @@ export function createLocalStore() {
     return { fields: { ...x.fields }, entries: Object.entries(x.entries).map(([id, e]) => ({ id, ...e })) };
   };
   const emit = (d) => subs.get(d)?.forEach((cb) => cb(snapshot(d)));
-  const save = (d) => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} emit(d); };
+  const wsubs = new Set();
+  const weights = () => Object.entries(data.weights || {}).map(([date, w]) => ({ date, ...w }));
+  const emitW = () => wsubs.forEach((cb) => cb(weights()));
+  const save = (d) => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} if (d) emit(d); else emitW(); };
   window.addEventListener('storage', (e) => {
     if (e.key !== KEY) return;
     data = load();
     subs.forEach((_, d) => emit(d));
+    emitW();
   });
 
   return {
@@ -42,6 +46,10 @@ export function createLocalStore() {
     async setField(d, key, value) { day(d).fields[key] = value; save(d); },
     async exportAll() { return data; },
     async getDays(dates) { return Object.fromEntries(dates.map((d) => [d, snapshot(d).entries])); },
+    // peso: un valore per data
+    subscribeWeights(cb) { wsubs.add(cb); cb(weights()); return () => wsubs.delete(cb); },
+    async setWeight(date, kg, by) { (data.weights ||= {})[date] = { kg, by, updatedAt: Date.now() }; save(); },
+    async deleteWeight(date) { delete data.weights?.[date]; save(); },
   };
 }
 
@@ -103,12 +111,18 @@ export async function createFirebaseStore(config) {
     async setField(d, key, value) {
       await fs.setDoc(dayDoc(d), { fields: { [key]: value }, updatedAt: fs.serverTimestamp() }, { merge: true });
     },
+    subscribeWeights(cb, onError) {
+      return fs.onSnapshot(fs.collection(db, 'weights'), (s) => cb(s.docs.map((x) => ({ date: x.id, ...x.data() }))), onError);
+    },
+    async setWeight(date, kg, by) { await fs.setDoc(fs.doc(db, 'weights', date), { kg, by, updatedAt: Date.now() }); },
+    async deleteWeight(date) { await fs.deleteDoc(fs.doc(db, 'weights', date)); },
     async getDays(dates) {
       const res = await Promise.all(dates.map((d) => fs.getDocs(entriesCol(d))));
       return Object.fromEntries(dates.map((d, i) => [d, res[i].docs.map((x) => ({ id: x.id, ...x.data() }))]));
     },
     async exportAll() {
-      const out = { days: {} };
+      const out = { days: {}, weights: {} };
+      for (const w of (await fs.getDocs(fs.collection(db, 'weights'))).docs) out.weights[w.id] = w.data();
       const days = await fs.getDocs(fs.collection(db, 'days'));
       for (const dd of days.docs) {
         const ents = await fs.getDocs(entriesCol(dd.id));
@@ -135,6 +149,7 @@ export async function createClaudeStore() {
   const readOnly = (await user?.can?.('data.write')) === false;
   const entries = db.collection('entries');
   const notes = db.collection('days');
+  const weightsCol = db.collection('weights');
 
   return {
     shared: true,
@@ -170,7 +185,8 @@ export async function createClaudeStore() {
       return Object.fromEntries(ids.map((i) => [i, ps[i]?.name || '']));
     },
     async exportAll() {
-      const out = { days: {} };
+      const out = { days: {}, weights: {} };
+      for (const w of (await weightsCol.get()).docs) out.weights[w.id] = w.data();
       for (const s of (await notes.get()).docs) (out.days[s.id] ||= { fields: {}, entries: {} }).fields = s.data().fields || {};
       for (const s of (await entries.get()).docs) {
         const e = s.data();
@@ -179,6 +195,11 @@ export async function createClaudeStore() {
       return out;
     },
     async download(filename, data) { await downloads.save({ filename, data }); },
+    subscribeWeights(cb, onError) {
+      return weightsCol.onSnapshot((s) => cb(s.docs.map((x) => ({ date: x.id, ...x.data() }))), onError);
+    },
+    async setWeight(date, kg, by) { await weightsCol.doc(date).set({ kg, by, byId: myId, updatedAt: Date.now() }); },
+    async deleteWeight(date) { await weightsCol.doc(date).delete(); },
     async getDays(dates) {
       const sorted = dates.slice().sort();
       const snap = await entries.where('date', '>=', sorted[0]).where('date', '<=', sorted[sorted.length - 1]).get();

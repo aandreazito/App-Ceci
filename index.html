@@ -70,6 +70,18 @@
     </div>
     <div id="week-stats" class="stats"></div>
     <div id="week-typical" class="card typical-card"></div>
+    <div class="card tone-peso" id="weight-card">
+      <h2 class="card-title"><span class="badge" id="weight-badge"></span><span class="hl">Peso</span></h2>
+      <div id="weight-summary"></div>
+      <form id="weight-form" class="weight-form" autocomplete="off">
+        <label>Giorno<input type="date" id="weight-date" required></label>
+        <label>Peso (kg)<input type="text" id="weight-kg" inputmode="decimal" placeholder="es. 5,42" required></label>
+        <button type="submit" class="primary">Salva</button>
+      </form>
+      <p id="weight-msg" class="hint"></p>
+      <div id="weight-chart"></div>
+      <ul id="weight-list" class="weight-list"></ul>
+    </div>
     <div class="card tone-pasti">
       <h2 class="card-title"><span class="badge"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3h5v3h-5z"/><path d="M8.5 6h7l1.5 3.5V19a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9.5z"/><path d="M7 12.5h4M7 16h3"/></svg></span><span class="hl">Latte al giorno</span></h2>
       <div id="milk-chart" class="milk-chart"></div>
@@ -88,7 +100,7 @@
       <h3 id="entry-title"></h3>
       <div id="entry-fields"></div>
       <div class="row">
-        <button type="button" id="entry-delete" class="danger">Elimina</button>
+        <button type="button" id="entry-delete" class="danger-btn">Elimina</button>
         <span class="spacer"></span>
         <button type="button" id="entry-cancel">Annulla</button>
         <button type="submit" class="primary">Salva</button>

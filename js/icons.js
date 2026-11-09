@@ -8,6 +8,8 @@ const P = {
   salute: '<rect x="3.5" y="8" width="17" height="8" rx="4" transform="rotate(-45 12 12)"/><path d="M9.2 9.2l5.6 5.6"/>',
   umore: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14a4.5 4.5 0 0 0 7 0"/><path d="M9 10h.01M15 10h.01"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
+  peso: '<rect x="3.5" y="5" width="17" height="15" rx="3.5"/><path d="M7.5 11a4.5 4.5 0 0 1 9 0"/><path d="M12 11l1.8-2.2"/>',
+  trash: '<path d="M4.5 7h15"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 12.5a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-12.5"/><path d="M10 11v6M14 11v6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
 };
 export const icon = (name, cls = 'ic') =>
