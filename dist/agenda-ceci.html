@@ -86,6 +86,11 @@ input, select, textarea {
   font: inherit; font-size: max(16px, 1rem); color: var(--ink); background: var(--paper);
   border: 1.5px solid var(--line); border-radius: 14px; padding: 11px 13px; width: 100%;
 }
+/* iPhone: i campi data/ora hanno una larghezza minima propria e sforano dalla colonna */
+input[type="date"], input[type="time"] {
+  -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; display: block; min-height: 46px;
+}
+input::-webkit-date-and-time-value { text-align: left; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--tone, var(--brand)); }
 svg { flex: none; }
 .ic { width: 22px; height: 22px; }
@@ -384,9 +389,11 @@ body:has(.tabbar:not(.hidden))::after {
 .weight-now b small { font-size: 1rem; }
 .weight-now span { font-size: .85rem; color: var(--muted); }
 .weight-now .weight-delta { color: var(--ink); font-weight: 700; }
-.weight-form { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; }
-.weight-form label { margin: 0; }
-.weight-form button { padding: 11px 16px; border-radius: 14px; border: 0; font-weight: 800; height: 46px; }
+.weight-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 8px; align-items: end; }
+.weight-form label { margin: 0; min-width: 0; }
+.weight-form label:first-child { grid-column: 1 / -1; } /* la data su una riga sua */
+.weight-form input { height: 48px; }
+.weight-form button { padding: 0 20px; border-radius: 14px; border: 0; font-weight: 800; height: 48px; }
 #weight-msg:empty { display: none; }
 .wsvg { display: block; width: 100%; height: auto; margin-top: 12px; overflow: visible; }
 .wgrid { stroke: var(--line); stroke-width: 1; }
@@ -404,7 +411,6 @@ body:has(.tabbar:not(.hidden))::after {
 .wl-date { color: var(--muted); font-size: .85rem; }
 .wl-delta { font-size: .8rem; color: var(--muted); text-align: right; }
 .readonly .weight-form, .readonly .weight-list .danger-btn { display: none; }
-@media (max-width: 370px) { .weight-form { grid-template-columns: 1fr 1fr; } .weight-form button { grid-column: 1 / -1; } }
 
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
